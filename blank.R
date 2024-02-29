@@ -13,6 +13,11 @@ library(dplyr)
 
 dogs <- read.csv("Data/kul100od1001.csv")
 
+# Setting NA's (AlterV10Cd = 999 years)
+
+dogs <- dogs %>%
+  mutate(AlterV10Cd = ifelse(AlterV10Cd == 999, NA, AlterV10Cd))
+
 ################################################################################
 
 # GENERAL OBSERVATIONS
