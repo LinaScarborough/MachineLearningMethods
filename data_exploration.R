@@ -1,4 +1,6 @@
 # This script is for exploring the data and generating code snippets
+# If CSV fails to import, make sure that directory is set to:
+# Session -> Set Working Directory -> To Source File Location
 
 ################################################################################
 
@@ -11,9 +13,16 @@ library(ggplot2)
 # Importing CSV file
 dogs <- read.csv("Data/kul100od1001.csv")
 
-# Setting NA's (AlterV10Cd = 999 years)
+################################################################################
+
+# DATA CLEANING
+
+# Setting NA's (AlterV10Cd = 999 years, AlterVHundSort = 999)
 dogs <- dogs %>%
-  mutate(AlterV10Cd = ifelse(AlterV10Cd == 999, NA, AlterV10Cd))
+  mutate(
+    AlterV10Cd = ifelse(AlterV10Cd == 999, NA, AlterV10Cd),
+    AlterVHundSort = ifelse(AlterVHundSort == 999, NA, AlterVHundSort)
+  )
 
 ################################################################################
 
@@ -89,7 +98,7 @@ ggplot(owner_counts,
 
 ################################################################################
 
-# DOG COUNt bY SEX AND OWNER AGE GROUP
+# DOG COUNT BY SEX AND OWNER AGE GROUP
 
 sex_age_counts <- dogs %>%
   group_by(AlterV10Cd, SexLang) %>%
@@ -103,7 +112,7 @@ ggplot(sex_age_counts,
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered dogs by wwner age group and sex",
+  labs(title = "Registered dogs by owner age group and sex",
        x = "Age Group",
        y = "Dog Count",
        fill = "Sex") +
@@ -112,3 +121,15 @@ ggplot(sex_age_counts,
   scale_y_continuous(name = "") +
   scale_fill_manual(values = c("männlich" = "lightblue",
                                "weiblich" = "pink"))
+
+################################################################################
+
+# BOXPLOTS OF REGISTERED DOG AGES PER YEAR
+
+# Boxplot
+ggplot(dogs, aes(x = factor(StichtagDatJahr), y = AlterVHundSort)) +
+  geom_boxplot(fill = "black", color = "black", alpha = 0.1) +  # Adjust fill color and transparency
+  theme_minimal() +
+  labs(title = "Boxplots of registered dog ages per year",
+       x = "",
+       y = "")
