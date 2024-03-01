@@ -34,45 +34,55 @@ dim(dogs)
 head(dogs)
 
 # Years that the data set covers
-unique_years <- dogs %>%
+year_count <- dogs %>%
   distinct(StichtagDatJahr)
-
-unique_years
-
-# Counting dogs by sex
-sex_counts <- dogs %>%
-  group_by(SexLang) %>%
-  summarize(count = n())
-
-sex_counts
-
-# Counting owners by age-group
-owner_counts <- dogs %>%
-  group_by(AlterV10Cd) %>%
-  summarize(count = n())
-
-owner_counts
+year_count
 
 ################################################################################
 
-# DOG COUNT BY SEX AND BY YEAR
+# DOG COUNT BY DOG SEX AND BY YEAR
 
-sex_counts_sorted <- dogs %>%
+dogSex_count_year <- dogs %>%
+  group_by(StichtagDatJahr, SexHundLang) %>%
+  summarize(count = n())
+
+dogSex_count_year
+
+# Barplot
+ggplot(dogSex_count_year,
+       aes(x = factor(StichtagDatJahr),
+           y = count,
+           fill = SexHundLang)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  theme_minimal() +
+  labs(title = "Registered dogs by dog sex per year",
+       fill = "Dog sex") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "") +
+  scale_fill_manual(values = c("männlich" = "lightblue",
+                               "weiblich" = "pink"))
+
+################################################################################
+
+# DOG COUNT BY OWNER SEX AND BY YEAR
+
+ownSex_count_year <- dogs %>%
   group_by(StichtagDatJahr, SexLang) %>%
   summarize(count = n())
 
-sex_counts_sorted
+ownSex_count_year
 
 # Barplot
-ggplot(sex_counts_sorted,
+ggplot(ownSex_count_year,
        aes(x = factor(StichtagDatJahr),
            y = count,
            fill = SexLang)) +
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered dogs by sex and year",
-       fill = "Sex") +
+  labs(title = "Registered dogs by owner sex per year",
+       fill = "Owner sex") +
   scale_x_discrete(name = "") +
   scale_y_continuous(name = "") +
   scale_fill_manual(values = c("männlich" = "lightblue",
@@ -82,8 +92,14 @@ ggplot(sex_counts_sorted,
 
 # DOG COUNT BY OWNER AGE GROUP
 
+# Counting owners by age-group
+ownAge_count <- dogs %>%
+  group_by(AlterV10Cd) %>%
+  summarize(count = n())
+ownAge_count
+
 # Barplot
-ggplot(owner_counts,
+ggplot(ownAge_count,
        aes(x = factor(AlterV10Cd),
            y = count,
            fill = AlterV10Cd)) +
@@ -112,7 +128,7 @@ ggplot(sex_age_counts,
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered dogs by owner age group and sex",
+  labs(title = "Registered dogs by owner age group and owner sex",
        x = "Age Group",
        y = "Dog Count",
        fill = "Sex") +
@@ -133,3 +149,33 @@ ggplot(dogs, aes(x = factor(StichtagDatJahr), y = AlterVHundSort)) +
   labs(title = "Boxplots of registered dog ages per year",
        x = "",
        y = "")
+
+################################################################################
+
+# Counting all dog race mixes
+
+race_mix_counts <- dogs %>%
+  group_by(RasseMischlingLang) %>%
+  summarize(count = n())
+
+race_mix_counts
+
+################################################################################
+
+# Counting all dog races: 394
+
+races_counts <- dogs %>%
+  group_by(Rasse1Text) %>%
+  summarize(count = n())
+
+races_counts
+
+################################################################################
+
+# Counting race types: 4
+
+racesType_count <- dogs %>%
+  group_by(RassentypLang) %>%
+  summarize(count = n())
+
+racesType_count
