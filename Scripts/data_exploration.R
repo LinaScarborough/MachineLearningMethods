@@ -1,0 +1,266 @@
+# This script is for exploring the data and generating code snippets
+# If CSV fails to import, make sure that directory is set to:
+# Session -> Set Working Directory -> To Source File Location
+
+################################################################################
+
+# Loading libraries
+library(tidyverse)
+library(ggplot2)
+library(sf)
+
+################################################################################
+
+# Importing CSV file
+df.dogs <- read.csv("../Datasets/kul100od1001.csv")
+
+# Importing city polygons
+st.zh <- st_read("../Datasets/stzh.adm_stadtkreise_a.geojson")
+
+################################################################################
+
+# TRANSLATION OF COLUMN NAMES
+
+translation_dict <- c("StichtagDatJahr" = "ReferenceYear",
+                      "DatenstandCd" = "DataStatusCoded",
+                      "HalterId" = "OwnerId",
+                      "AlterV10Cd" = "AgeV10Coded",
+                      "AlterV10Lang" = "AgeV10Text",
+                      "AlterV10Sort" = "AgeV10Sort",
+                      "SexCd" = "OwnerSexCoded",
+                      "SexLang" = "OwnerSexText",
+                      "SexSort" = "SexSort",
+                      "KreisCd" = "DistrictCoded",
+                      "KreisLang" = "DistrictText",
+                      "KreisSort" = "DistrictSort",
+                      "QuarCd" = "QuarterCoded",
+                      "QuarLang" = "QuarterText",
+                      "QuarSort" = "QuarterSort",
+                      "Rasse1Text" = "Breed1Text",
+                      "Rasse2Text" = "Breed2Text",
+                      "RasseMischlingCd" = "MixedBreedCoded",
+                      "RasseMischlingLang" = "MixedBreedText",
+                      "RasseMischlingSort" = "MixedBreedSort",
+                      "RassentypCd" = "BreedTypeCode",
+                      "RassentypLang" = "BreedTypeLong",
+                      "RassentypSort" = "BreedTypeSort",
+                      "GebDatHundJahr" = "DogBirthYear",
+                      "AlterVHundCd" = "DogAgeCoded",
+                      "AlterVHundLang" = "DogAgeText",
+                      "AlterVHundSort" = "DogAgeSort",
+                      "SexHundCd" = "DogSexCoded",
+                      "SexHundLang" = "DogSexText",
+                      "SexHundSort" = "DogSexSort",
+                      "HundefarbeText" = "DogColorText",
+                      "AnzHunde" = "NumberOfDogs")
+
+# Rename columns using translation dictionary
+names(df.dogs) <- sapply(names(df.dogs), function(x) {
+  if (x %in% names(translation_dict)) {
+    return(translation_dict[x])
+  } else {
+    return(x)
+  }
+})
+
+################################################################################
+
+# DATA CLEANING + ENRICHMENT
+
+# Setting NA's (AgeV10Coded = 999 years, DogAgeSort = 999)
+df.dogs <- df.dogs %>%
+  mutate(
+    AgeV10Coded = ifelse(AgeV10Coded == 999, NA, AgeV10Coded),
+    AlterVHundSort = ifelse(DogAgeSort == 999, NA, DogAgeSort)
+  )
+
+# New DogSize column
+df.dogs <- df.dogs %>%
+  mutate(DogSize = case_when(
+    BreedTypeLong == "Kleinwüchsig" ~ "small",
+    BreedTypeLong == "Rassentypenliste I" ~ "large",
+    BreedTypeLong == "Rassentypenliste II" ~ "banned",
+    TRUE ~ NA_character_
+  ))
+
+################################################################################
+
+# GENERAL OBSERVATIONS
+
+# These observations are done on the entire data set (2015-2023)
+
+dim(df.dogs)
+str(df.dogs)
+
+# Years that the data set covers
+year_count <- df.dogs %>%
+  distinct(ReferenceYear)
+year_count
+
+################################################################################
+
+# DOG COUNT BY DOG SEX AND BY YEAR
+
+df.dogsex_count_year <- df.dogs %>%
+  group_by(ReferenceYear, DogSexText) %>%
+  summarize(count = n())
+
+df.dogsex_count_year
+
+# Barplot
+ggplot(df.dogsex_count_year,
+       aes(x = factor(ReferenceYear),
+           y = count,
+           fill = DogSexText)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  theme_minimal() +
+  labs(title = "Registered df.dogs by dog sex per year",
+       fill = "Dog sex") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "") +
+  scale_fill_manual(values = c("männlich" = "lightblue",
+                               "weiblich" = "pink"))
+
+################################################################################
+
+# DOG COUNT BY OWNER SEX AND BY YEAR
+
+ownSex_count_year <- df.dogs %>%
+  group_by(ReferenceYear, OwnerSexText) %>%
+  summarize(count = n())
+
+ownSex_count_year
+
+# Barplot
+ggplot(ownSex_count_year,
+       aes(x = factor(ReferenceYear),
+           y = count,
+           fill = OwnerSexText)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  theme_minimal() +
+  labs(title = "Registered df.dogs by owner sex per year",
+       fill = "Owner sex") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "") +
+  scale_fill_manual(values = c("männlich" = "lightblue",
+                               "weiblich" = "pink"))
+
+################################################################################
+
+# DOG COUNT BY OWNER AGE GROUP
+
+# Counting owners by age-group
+ownAge_count <- df.dogs %>%
+  group_by(AgeV10Coded) %>%
+  summarize(count = n())
+ownAge_count
+
+# Barplot
+ggplot(ownAge_count,
+       aes(x = factor(AgeV10Coded),
+           y = count,
+           fill = AgeV10Coded)) +
+  geom_bar(stat = "identity",
+           position = "dodge",
+           fill = "darkgrey") +
+  theme_minimal() +
+  labs(title = "Registered df.dogs by owner age group",
+       fill = "Age group") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "")
+
+################################################################################
+
+# DOG COUNT BY SEX AND OWNER AGE GROUP
+
+sex_age_counts <- df.dogs %>%
+  group_by(AgeV10Coded, OwnerSexText) %>%
+  summarize(count = n())
+
+# Barplot
+ggplot(sex_age_counts,
+       aes(x = factor(AgeV10Coded),
+           y = count,
+           fill = OwnerSexText)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  theme_minimal() +
+  labs(title = "Registered df.dogs by owner age group and owner sex",
+       x = "Age Group",
+       y = "Dog Count",
+       fill = "Sex") +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "") + 
+  scale_fill_manual(values = c("männlich" = "lightblue",
+                               "weiblich" = "pink"))
+
+################################################################################
+
+# BOXPLOTS OF REGISTERED DOG AGES PER YEAR
+
+# Boxplot
+ggplot(df.dogs, aes(x = factor(ReferenceYear), y = AlterVHundSort)) +
+  geom_boxplot(fill = "black", color = "black", alpha = 0.1) +  
+  theme_minimal() +
+  labs(title = "Boxplots of registered dog ages per year",
+       x = "",
+       y = "")
+
+################################################################################
+
+# RACE TYPE COUNT PER NEIGHBOUDHOOD
+
+# Counting race types: 4
+raceType_count <- df.dogs %>%
+  group_by(DogSize, DistrictText) %>%
+  summarize(count = n())
+
+# Barplot
+ggplot(raceType_count,
+       aes(x = factor(DistrictText),
+           y = count,
+           fill = DogSize)) +
+  geom_bar(stat = "identity",
+           position = "dodge") +
+  facet_wrap(~ DogSize, scales = "free_y", nrow = 2) +
+  theme_minimal() +
+  labs(title = "Dog size per neighbourhood",
+       x = "",
+       y = "",
+       fill = "Race type") +
+  theme(axis.text.x = element_text(angle = 45,
+                                   hjust = 1)) +
+  scale_x_discrete(name = "") +
+  scale_y_continuous(name = "")
+
+
+################################################################################
+
+# RACE TYPE COUNT PER NEIGHBOURHOOD MAP
+
+dogSize_count_geo <- merge(st.zh, 
+                   raceType_count,
+                   by.x = "bezeichnung",
+                   by.y = "DistrictText")
+dogSize_count_geo$DogSize <- factor(dogSize_count_geo$DogSize)
+
+ggplot(dogSize_count_geo) +
+  geom_sf(aes(fill = DogSize,
+              alpha = count),
+          color = "white",
+          size = 0.2)  +
+  geom_sf_text(aes(label = count),
+               size = 2,
+               check_overlap = TRUE) +
+  facet_wrap(~ DogSize,
+             nrow = 2) +
+  labs(title = "Map with DogSize Counts",
+       xlab = "Longitude",
+       ylab = "Latitude") +
+  scale_fill_manual(name = "Race type", 
+                    values = scales::hue_pal()(length(unique(dogSize_count_geo$DogSize)))) +
+  scale_alpha_continuous(name = "Register count",
+                         range = c(0.2, 1)) +
+  theme_minimal()

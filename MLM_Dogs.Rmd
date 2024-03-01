@@ -1,0 +1,34 @@
+---
+title: "Machine Learning Methods: a look into the dog register of the city of Zürich"
+author: "Rina Gandolfi, Daniel Herrera & Lina Scarborough"
+date: "2024-03-01"
+output:
+  html_document: default
+  pdf_document: default
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## 1. Presentation of the case
+
+---
+
+## 2. Data exploration
+
+---
+
+## 3. Models
+
+---
+
+## 4. Additional chapter
+
+--
+
+## 5. Conclusion
+
+--
+
+## 6. Appendix: Generative AI tools
