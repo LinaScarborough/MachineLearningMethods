@@ -99,6 +99,46 @@ year_count
 
 ################################################################################
 
+df.dogs <- df.dogs %>%
+  mutate(
+    OwnerSexText = as.factor(OwnerSexText),
+    AgeV10Text = as.factor(AgeV10Text),
+    Breed1Text = as.factor(Breed1Text),
+    Breed2Text = as.factor(Breed2Text),
+    DogSexText = as.factor(DogSexText),
+    DogColorText = as.factor(DogColorText),
+    DogSize = as.factor(DogSize),
+    DogAgeText = as.factor(DogAgeText)
+  )
+
+################################################################################
+
+# DOG COUNT BY NEIGHBOURHOOD + LINEAR REGRESSIONS
+
+dog_count_per_neighborhood_year <- df.dogs %>%
+  group_by(DistrictText, ReferenceYear) %>%
+  summarize(DogCount = n())
+
+# Choose a specific neighborhood, e.g., "Kreis 9"
+selected_neighborhood <- "Kreis 9"
+
+# Filter the data for the selected neighborhood
+selected_neighborhood_data <- dog_count_per_neighborhood_year %>%
+  filter(DistrictText == selected_neighborhood)
+
+# Plotting
+ggplot(dog_count_per_neighborhood_year, aes(x = ReferenceYear, y = DogCount, color = DistrictText)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Dog registration by neighborhood",
+       x = "",
+       y = "",
+       color = "Neighborhood") +
+  theme_minimal() +
+  scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
+
+################################################################################
+
 # DOG COUNT BY DOG SEX AND BY YEAR
 
 df.dogsex_count_year <- df.dogs %>%
