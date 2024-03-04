@@ -113,27 +113,38 @@ df.dogs <- df.dogs %>%
 
 ################################################################################
 
-# DOG COUNT BY NEIGHBOURHOOD + LINEAR REGRESSIONS
+# MODEL 01 -- DOG COUNT BY DISTRICT + LINEAR REGRESSIONS
 
 dog_count_per_neighborhood_year <- df.dogs %>%
   group_by(DistrictText, ReferenceYear) %>%
   summarize(DogCount = n())
 
-# Choose a specific neighborhood, e.g., "Kreis 9"
-selected_neighborhood <- "Kreis 9"
-
-# Filter the data for the selected neighborhood
-selected_neighborhood_data <- dog_count_per_neighborhood_year %>%
-  filter(DistrictText == selected_neighborhood)
-
-# Plotting
-ggplot(dog_count_per_neighborhood_year, aes(x = ReferenceYear, y = DogCount, color = DistrictText)) +
+ggplot(dog_count_per_neighborhood_year, 
+       aes(x = ReferenceYear, 
+           y = DogCount, 
+           color = DistrictText)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Dog registration by neighborhood",
+  labs(title = "Dog registrations by neighborhood",
        x = "",
        y = "",
-       color = "Neighborhood") +
+       color = "District") +
+  theme_minimal() +
+  scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
+
+################################################################################
+
+# MODEL 02 -- DOG COUNT BY DISTRICT + SMOOTHER
+
+ggplot(dog_count_per_neighborhood_year,
+       aes(x = ReferenceYear, y = DogCount,
+           color = DistrictText)) +
+  geom_point() +
+  geom_smooth(method = "loess", se = FALSE) +
+  labs(title = "Dog registrations by neighborhood",
+       x = "",
+       y = "",
+       color = "District") +
   theme_minimal() +
   scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
 
