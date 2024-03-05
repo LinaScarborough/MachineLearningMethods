@@ -183,7 +183,7 @@ ggplot(df.dogsex_count_year,
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered df.dogs by dog sex per year",
+  labs(title = "Registered dogs by dog sex per year",
        fill = "Dog sex") +
   scale_x_discrete(name = "") +
   scale_y_continuous(name = "") +
@@ -208,7 +208,7 @@ ggplot(ownSex_count_year,
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered df.dogs by owner sex per year",
+  labs(title = "Registered dogs by owner sex per year",
        fill = "Owner sex") +
   scale_x_discrete(name = "") +
   scale_y_continuous(name = "") +
@@ -234,7 +234,7 @@ ggplot(ownAge_count,
            position = "dodge",
            fill = "darkgrey") +
   theme_minimal() +
-  labs(title = "Registered df.dogs by owner age group",
+  labs(title = "Registered dogs by owner age group",
        fill = "Age group") +
   scale_x_discrete(name = "") +
   scale_y_continuous(name = "")
@@ -255,7 +255,7 @@ ggplot(sex_age_counts,
   geom_bar(stat = "identity",
            position = "dodge") +
   theme_minimal() +
-  labs(title = "Registered df.dogs by owner age group and owner sex",
+  labs(title = "Registered dogs by owner age group and owner sex",
        x = "Age Group",
        y = "Dog Count",
        fill = "Sex") +
@@ -324,7 +324,7 @@ ggplot(dogSize_count_geo) +
                check_overlap = TRUE) +
   facet_wrap(~ DogSize,
              nrow = 2) +
-  labs(title = "Map with DogSize Counts",
+  labs(title = "Map with dog sizes",
        xlab = "Longitude",
        ylab = "Latitude") +
   scale_fill_manual(name = "Race type", 
