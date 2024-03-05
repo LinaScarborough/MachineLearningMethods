@@ -8,6 +8,7 @@
 library(tidyverse)
 library(ggplot2)
 library(sf)
+library(mgcv)
 
 ################################################################################
 
@@ -125,7 +126,7 @@ ggplot(dog_count_per_neighborhood_year,
            color = DistrictText)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
-  labs(title = "Dog registrations by neighborhood",
+  labs(title = "Dog registrations by neighborhood - Linear Model",
        x = "",
        y = "",
        color = "District") +
@@ -141,7 +142,23 @@ ggplot(dog_count_per_neighborhood_year,
            color = DistrictText)) +
   geom_point() +
   geom_smooth(method = "loess", se = FALSE) +
-  labs(title = "Dog registrations by neighborhood",
+  labs(title = "Dog registrations by neighborhood - Smoother",
+       x = "",
+       y = "",
+       color = "District") +
+  theme_minimal() +
+  scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
+
+################################################################################
+
+# MODEL 03 -- DOG COUNT BY DISTRICT + QUADRATIC REGRESSION
+
+ggplot(dog_count_per_neighborhood_year,
+       aes(x = ReferenceYear, y = DogCount,
+           color = DistrictText)) +
+  geom_point() +
+  geom_smooth(method = "lm", formula = y ~ poly(x, 2), se = FALSE) +
+  labs(title = "Dog registrations by neighborhood - Quadratic Regression",
        x = "",
        y = "",
        color = "District") +
