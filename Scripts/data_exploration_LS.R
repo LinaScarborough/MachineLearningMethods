@@ -359,17 +359,16 @@ ggplot(dogSize_count_geo) +
                          range = c(0.2, 1)) +
   theme_minimal()
 
-############################################################3
+############################################################
 
-### LS added
-
-# Count dogs by sex
+### LS added Binomial
+# Create a tibble dataframe to count dogs by dog sex
 dog_sex_counts <- df.dogs %>%
-  group_by(OwnerSexText) %>%
+  group_by(DogSexCoded) %>%
   summarize(count = n())
 
 # Binomial regression plot
-ggplot(sex_counts, aes(x = OwnerSexText, y = count)) +
+ggplot(dog_sex_counts, aes(x = DogSexCoded, y = count)) +
   geom_bar(stat = "identity", fill = "lightblue") +
   labs(title = "Count of Male vs. Female Dogs",
        x = "Sex",
@@ -377,5 +376,45 @@ ggplot(sex_counts, aes(x = OwnerSexText, y = count)) +
   theme_minimal() +
   geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "binomial"))
 
-summary()
-# 99999999999999999999999999999999999999999999999999999999999999
+# Recode DogSexCoded to be binary (1 for female, 0 for male)
+df.dogs$DogSexCoded <- ifelse(df.dogs$DogSexCoded == 2, 1, 0)
+
+
+# Fit binomial regression model
+binomial_model <- glm(DogSexCoded ~ AgeV10Coded, data = df.dogs, family = binomial())
+
+# Display summary of the model
+summary(binomial_model)
+
+
+#############################################################
+
+### LS added poissan
+# Create a tibble dataframe to count dogs by dog sex
+dog_sex_counts <- df.dogs %>%
+  group_by(DogSexCoded) %>%
+  summarize(count = n())
+
+# Binomial regression plot
+ggplot(dog_sex_counts, aes(x = DogSexCoded, y = count)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  labs(title = "Count of Male vs. Female Dogs",
+       x = "Sex",
+       y = "Count") +
+  theme_minimal() +
+  geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "binomial"))
+
+# Create a tibble dataframe to count dogs by dog sex
+dog_sex_counts <- df.dogs %>%
+  group_by(DogSexCoded) %>%
+  summarize(count = n())
+
+# Binomial regression plot
+ggplot(dog_sex_counts, aes(x = DogSexCoded, y = count)) +
+  geom_bar(stat = "identity", fill = "lightblue") +
+  labs(title = "Count of Male vs. Female Dogs",
+       x = "Sex",
+       y = "Count") +
+  theme_minimal() +
+  geom_smooth(method = "glm", formula = y ~ x, method.args = list(family = "binomial"))
+
