@@ -114,11 +114,25 @@ df.dogs <- df.dogs %>%
 
 ################################################################################
 
+
+
+################################################################################
+
 # MODEL 01 -- DOG COUNT BY DISTRICT + LINEAR REGRESSIONS
 
 dog_count_per_neighborhood_year <- df.dogs %>%
   group_by(DistrictText, ReferenceYear) %>%
   summarize(DogCount = n())
+
+lm.counts.year <- lm(DogCount ~ ReferenceYear * DistrictText,
+                     data = dog_count_per_neighborhood_year)
+summary(lm.counts.year)
+
+plot(lm.counts.year)
+
+
+
+
 
 ggplot(dog_count_per_neighborhood_year, 
        aes(x = ReferenceYear, 

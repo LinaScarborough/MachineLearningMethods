@@ -17,9 +17,185 @@ knitr::opts_chunk$set(echo = TRUE)
 
 ## 2. Data exploration
 
+As mentioned above, the main data has been sourced from the [opendata.swiss project](https://opendata.swiss/de/dataset/hundebestande-der-stadt-zurich-seit-2015/resource/5f8eafd2-367f-489c-a075-42426d14c586), having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
+
+_This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, gender and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
+
+For the sake of a seamless workflow and easier interpretation of the variables within our group, the names of columns as well as certain string values have been translated to English from the original German version. 
+
+```{r loading, include=FALSE}
+
+setwd("~/GitHub/MachineLearningMethods")
+
+# Loading libraries
+library(tidyverse)
+library(ggplot2)
+library(sf)
+library(mgcv)
+library(plotly)
+
+################################################################################
+
+# Importing CSV file
+df.dogs <- read.csv("Datasets/kul100od1001.csv")
+
+# Importing city polygons
+st.zh <- st_read("Datasets/stzh.adm_stadtkreise_a.geojson")
+
+################################################################################
+
+# TRANSLATION OF COLUMN NAMES
+
+translation_dict <- c("StichtagDatJahr" = "ReferenceYear",
+                      "DatenstandCd" = "DataStatusCoded",
+                      "HalterId" = "OwnerId",
+                      "AlterV10Cd" = "AgeV10Coded",
+                      "AlterV10Lang" = "AgeV10Text",
+                      "AlterV10Sort" = "AgeV10Sort",
+                      "SexCd" = "OwnerSexCoded",
+                      "SexLang" = "OwnerSexText",
+                      "SexSort" = "SexSort",
+                      "KreisCd" = "DistrictCoded",
+                      "KreisLang" = "DistrictText",
+                      "KreisSort" = "DistrictSort",
+                      "QuarCd" = "QuarterCoded",
+                      "QuarLang" = "QuarterText",
+                      "QuarSort" = "QuarterSort",
+                      "Rasse1Text" = "Breed1Text",
+                      "Rasse2Text" = "Breed2Text",
+                      "RasseMischlingCd" = "MixedBreedCoded",
+                      "RasseMischlingLang" = "MixedBreedText",
+                      "RasseMischlingSort" = "MixedBreedSort",
+                      "RassentypCd" = "BreedTypeCode",
+                      "RassentypLang" = "BreedTypeLong",
+                      "RassentypSort" = "BreedTypeSort",
+                      "GebDatHundJahr" = "DogBirthYear",
+                      "AlterVHundCd" = "DogAgeCoded",
+                      "AlterVHundLang" = "DogAgeText",
+                      "AlterVHundSort" = "DogAgeSort",
+                      "SexHundCd" = "DogSexCoded",
+                      "SexHundLang" = "DogSexText",
+                      "SexHundSort" = "DogSexSort",
+                      "HundefarbeText" = "DogColorText",
+                      "AnzHunde" = "NumberOfDogs")
+
+# Rename columns using translation dictionary
+names(df.dogs) <- sapply(names(df.dogs), function(x) {
+  if (x %in% names(translation_dict)) {
+    return(translation_dict[x])
+  } else {
+    return(x)
+  }
+})
+
+################################################################################
+
+# DATA CLEANING
+
+# Setting NA's (AgeV10Coded = 999 years, DogAgeSort = 999)
+df.dogs <- df.dogs %>%
+  mutate(
+    AgeV10Coded = ifelse(AgeV10Coded == 999, NA, AgeV10Coded),
+    AlterVHundSort = ifelse(DogAgeSort == 999, NA, DogAgeSort)
+  )
+
+```
+
+The main source of data is the `kul100od1001.csv` file, which contains a collection of 70,967 listings with 33 variables.
+
+```{r structure, echo=TRUE}
+
+dim(df.dogs)
+str(df.dogs)
+
+```
+
+As can be seen in the structure of the data, the set comprises several observations of diverse data types. Most variables are expressed three times as different types, as integers (Coded and Sort form), as well as strings (Text). Depending on their implementation in the study they have been selected in one of the three variants, therefore our selection of relevant observations can be summarized as follows:
+
+**Numerical values**:
+
+  - `ReferenceYear`: numerical value for the reference year
+  - `OwnerId`: numerical identifier for the owner of the registered dog
+  - `AgeV10Sort`: referring to the owner's age as a 10-year category
+  - `DogBirthYear`: numerical value for the birth year of the dog
+  - `DogAgeSort`: referring to the dog's age at the time of registration
+  - `NumberOfDogs`: numerical counter of the dog count for each dog owner 
+  
+**Binary variables**: !!! Is breed multinomial or factor? !!!
+
+  - `DogSexText`: numerical value indicating two states for the biological sex of the dog
+  
+**String values**:
+
+  - `DistricText`: the name of each larger district of Zürich according to the official division
+  - `QuarterText`: the name of the smaller neighbourhoods which comprise the larger districts
+  - `Breed1Text` and `Breed1Text2`: referring to dog race denominations and information
+  - `MixedBreedText`: additional information regarding race mixing in the dog
+  - `DogColorText`: a descriptive name for the colour of the dog
+  - `BreedTypeLong`: referring to the official dog type classification according to the [Zürich Cantonal Law](https://www.zh.ch/content/dam/zhweb/bilder-dokumente/themen/umwelt-tiere/tiere/veterinaeramt/hunde/publikationen/erlaeuterungenzuhuv.pdf)
+
+```{r enrichment, include=FALSE}
+
+# New DogSize column
+df.dogs <- df.dogs %>%
+  mutate(DogSize = case_when(
+    BreedTypeLong == "Kleinwüchsig" ~ "small",
+    BreedTypeLong == "Rassentypenliste I" ~ "large",
+    BreedTypeLong == "Rassentypenliste II" ~ "banned",
+    TRUE ~ NA_character_
+  ))
+
+```
+
+The original data set has been complemented with the GEOJSON file `stzh.adm_stadtkreise_a.geojson` for the production of map plots, by merging both data sets with the district name variables, as convened by the City Council of Zürich.
+
 ---
 
 ## 3. Models
+
+### 3.1. Model 01: Linear Model
+##Dog count by district over time
+
+```{r model01_plot, include=FALSE}
+
+# MODEL 01 -- DOG COUNT BY DISTRICT + LINEAR REGRESSIONS
+
+dog_count_per_neighborhood_year <- df.dogs %>%
+  group_by(DistrictText, ReferenceYear) %>%
+  summarize(DogCount = n())
+
+fit01_ggplot <- ggplot(dog_count_per_neighborhood_year, 
+       aes(x = ReferenceYear, 
+           y = DogCount, 
+           color = DistrictText)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Dog registrations by neighborhood - Linear Model",
+       x = "",
+       y = "",
+       color = "District") +
+  theme_minimal() +
+  scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
+
+```
+
+```{r model01_plotly, echo=TRUE, fig.width=10, fig.height=6, fig.align='center', cache=TRUE}
+
+ggplotly(fit01_ggplot)
+
+```
+
+```{r model01_coef, echo=TRUE}
+
+lm.counts.year <- lm(DogCount ~ ReferenceYear * DistrictText,
+                     data = dog_count_per_neighborhood_year)
+summary(lm.counts.year)
+
+```
+
+---
+
+### 3.2. Linear model
 
 ---
 
