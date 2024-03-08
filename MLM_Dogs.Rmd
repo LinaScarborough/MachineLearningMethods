@@ -92,11 +92,22 @@ names(df.dogs) <- sapply(names(df.dogs), function(x) {
 
 # DATA CLEANING
 
-# Setting NA's (AgeV10Coded = 999 years, DogAgeSort = 999)
+# Setting NAs (AgeV10Coded = 999 years, DogAgeSort = 999)
 df.dogs <- df.dogs %>%
   mutate(
     AgeV10Coded = ifelse(AgeV10Coded == 999, NA, AgeV10Coded),
     AlterVHundSort = ifelse(DogAgeSort == 999, NA, DogAgeSort)
+  )
+
+# Replacing NAs with averages
+avg_AgeV10Coded <- mean(df.dogs$AgeV10Coded, na.rm = TRUE)
+rounded_value <- floor(avg_AgeV10Coded / 10) * 10
+
+# Replace NA values with the rounded down value
+df.dogs <- df.dogs %>%
+  mutate(
+    AgeV10Coded = ifelse(is.na(AgeV10Coded), rounded_value, AgeV10Coded),
+    AlterVHundSort = ifelse(is.na(AlterVHundSort), rounded_value, AlterVHundSort)
   )
 
 ```
@@ -153,8 +164,7 @@ The original data set has been complemented with the GEOJSON file `stzh.adm_stad
 
 ## 3. Models
 
-### 3.1. Model 01: Linear Model
-##Dog count by district over time
+### 3.1. Linear Model: dog count by district over time
 
 ```{r model01_plot, include=FALSE}
 
@@ -195,16 +205,32 @@ summary(lm.counts.year)
 
 ---
 
-### 3.2. Linear model
+### 3.2. Generalized Linear Model (Poisson)
+
+
+
+---
+
+### 3.3. Generalized Linear Model (Binomial)
+
+```{r model03, echo=TRUE}
+
+
+
+```
+
+---
+
+### 3.4. Generalized Additive Model (Binomial)
 
 ---
 
 ## 4. Additional chapter
 
---
+---
 
 ## 5. Conclusion
 
---
+---
 
 ## 6. Appendix: Generative AI tools

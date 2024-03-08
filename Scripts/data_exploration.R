@@ -149,7 +149,7 @@ ggplot(dog_count_per_neighborhood_year,
 
 ################################################################################
 
-# MODEL 02 -- DOG COUNT BY DISTRICT + SMOOTHER
+# MODEL 01 -- DOG COUNT BY DISTRICT + SMOOTHER
 
 ggplot(dog_count_per_neighborhood_year,
        aes(x = ReferenceYear, y = DogCount,
@@ -165,7 +165,7 @@ ggplot(dog_count_per_neighborhood_year,
 
 ################################################################################
 
-# MODEL 03 -- DOG COUNT BY DISTRICT + QUADRATIC REGRESSION
+# MODEL 01 -- DOG COUNT BY DISTRICT + QUADRATIC REGRESSION
 
 ggplot(dog_count_per_neighborhood_year,
        aes(x = ReferenceYear, y = DogCount,
@@ -178,6 +178,12 @@ ggplot(dog_count_per_neighborhood_year,
        color = "District") +
   theme_minimal() +
   scale_x_continuous(breaks = unique(dog_count_per_neighborhood_year$ReferenceYear))
+
+################################################################################
+
+dog_counts_sex_district <- df.dogs %>%
+  group_by(DogSexText) %>%
+  summarise(DogCount = n())
 
 ################################################################################
 
