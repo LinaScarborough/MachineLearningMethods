@@ -195,7 +195,7 @@ ggplotly(fit01_ggplot)
 
 ```
 
-```{r model01_coef, echo=TRUE}
+```{r model01_fit_coef, echo=TRUE}
 
 lm.counts.year <- lm(DogCount ~ ReferenceYear * DistrictText,
                      data = dog_count_per_neighborhood_year)
@@ -213,11 +213,40 @@ summary(lm.counts.year)
 
 ### 3.3. Generalized Linear Model (Binomial)
 
-```{r model03, echo=TRUE}
+```{r model03_fit, include=FALSE}
 
+dog_sex_counts <- df.dogs %>%
+  group_by(DogSexCoded) %>%
+  summarize(count = n())
 
+# Binomial bar plot
+ggplot(dog_sex_counts, aes(x = DogSexCoded, y = count)) +
+  geom_bar(stat = "identity",
+           fill = "lightblue") +
+  labs(title = "Count of Male vs. Female Dogs",
+       x = "Sex",
+       y = "Count") +
+  theme_minimal() +
+  geom_smooth(method = "glm",
+              formula = y ~ x,
+              method.args = list(family = "binomial"))
+
+# Recode DogSexCoded to be binary (1 for female, 0 for male)
+df.dogs$DogSexCoded <- ifelse(df.dogs$DogSexCoded == 2, 1, 0)
+
+# Fit binomial regression model
+binomial_model <- glm(DogSexCoded ~ AgeV10Coded,
+                      data = df.dogs,
+                      family = binomial())
 
 ```
+```{r model03_coef, echo=TRUE}
+
+# Display summary of the model
+summary(binomial_model)
+
+```
+
 
 ---
 
