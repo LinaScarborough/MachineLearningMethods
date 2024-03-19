@@ -6,7 +6,11 @@ output: html_document
 ---
 
 # A. Abstract
-This report presents a detailed study led by LinaScarborough, Daniel Herrera and Rina Gandolfi; focusing on the demographics of dog ownership in Zurich, Switzerland, using a dataset from the year 2015. The dataset, encompassing records from dog owners across various districts, serves as the foundation for statistical models aimed at understanding patterns in dog ownership, including breed preferences, owner demographics, and spatial distribution.
+This report presents a detailed study led by LinaScarborough, Daniel Herrera and Rina Gandolfi; 
+focusing on the demographics of dog ownership in Zurich, Switzerland, using a dataset from the year 2015. 
+The dataset, encompassing records from dog owners across various districts, 
+serves as the foundation for statistical models aimed at understanding patterns in dog ownership, 
+including breed preferences, owner demographics, and spatial distribution.
 
 ## Model Development
 *Descriptive Statistics*: To outline the basic demographic profiles of dog owners and their pets.
