@@ -22,9 +22,11 @@ including breed preferences, owner demographics, and spatial distribution.
 *Cluster Analysis*: To segment dog owners into distinct groups based on their preferences and demographics.
 
 *Predictive Models*: To forecast trends in dog ownership and breed popularity.
-  Linear Models (LM, GLM),
-  GAM Models,
-  ANN and SVM
+  Linear Models: Multiple Linear Regression. Interaction Terms. and Non-Linearity
+  GAM Models: Generalized Additive Models
+  GLM Models: Logistic Regression and Poisson Regression
+  ANN: Artificial Neural Networks
+  and SVM: Support Vecror Machines
   
 # B. Introduction
 
