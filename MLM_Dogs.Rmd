@@ -201,7 +201,7 @@ ownSex_count_year <- df.dogs %>%
   summarize(count = n())
 
 ggplot(ownSex_count_year,
-       aes(x = factor(ReferenceYear),
+  aes(x = factor(ReferenceYear),
            y = count,
            fill = OwnerSexText)) +
   geom_bar(stat = "identity",
@@ -212,7 +212,7 @@ ggplot(ownSex_count_year,
   scale_x_discrete(name = "") +
   scale_y_continuous(name = "") +
   scale_fill_manual(values = c("männlich" = "lightsalmon2",
-                               "weiblich" = "darkseagreen3"))
+                                 "weiblich" = "darkseagreen3"))
 
 ```
 
