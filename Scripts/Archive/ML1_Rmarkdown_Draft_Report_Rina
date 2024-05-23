@@ -1,0 +1,67 @@
+---
+title: "Dog Ownership in Zurich: A 2015 Study"
+author: "DRAFT_Report_Rina"
+date: "2024-03-18"
+output: html_document
+---
+
+# A. Abstract
+This report presents a detailed study led by LinaScarborough, Daniel Herrera and Rina Gandolfi; 
+focusing on the demographics of dog ownership in Zurich, Switzerland, using a dataset from the year 2015. 
+The dataset, encompassing records from dog owners across various districts, 
+serves as the foundation for statistical models aimed at understanding patterns in dog ownership, 
+including breed preferences, owner demographics, and spatial distribution.
+
+## Model Development
+*Descriptive Statistics*: To outline the basic demographic profiles of dog owners and their pets.
+
+*Spatial Analysis Models*: To explore the geographical distribution of dog 
+
+*Breed Popularity Models*: To identify trends in dog breed preferences among different demographic groups.
+
+*Cluster Analysis*: To segment dog owners into distinct groups based on their preferences and demographics.
+
+*Predictive Models*: To forecast trends in dog ownership and breed popularity.
+  Linear Models: Multiple Linear Regression. Interaction Terms. and Non-Linearity
+  GAM Models: Generalized Additive Models
+  GLM Models: Logistic Regression and Poisson Regression
+  ANN: Artificial Neural Networks
+  and SVM: Support Vecror Machines
+  
+# B. Introduction
+
+# C. Data Description and Inspection
+
+# D. Dataset Preparation for Predictive Modeling
+
+## 1. Data Refinement Process
+
+## 2. Resulting Dataset
+
+# E. Data Cleaning and Preprocessing
+
+## 1. Overview
+
+Data preparation and preprocessing are essential stages in readying a dataset for predictive analysis. During this phase, our efforts were concentrated on transforming data into a structure that is optimally suited for use in machine learning algorithms, emphasizing the accurate conversion and handling of categorical variables.
+
+## 2. Process Description
+
+### Categorical Variables Inspection
+
+Our preliminary action entailed a thorough examination of the dataset, with a specific emphasis on categorical variables related to dog ownership demographics.
+
+### Code Implementation
+Identification of Categorical Variables: 
+We initiated our analysis by identifying key variables pertinent to our study (e.g., OwnerGender, DogBreed, OwnerDistrict) that are inherently categorical.
+
+Verification of Unique Values:
+
+Conversion to Factors:
+
+Final Structure Validation:
+
+
+# F. lmputing Missing Values
+
+# G. Exploratory Data Analysis
+

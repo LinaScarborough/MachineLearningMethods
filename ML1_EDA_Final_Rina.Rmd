@@ -93,7 +93,7 @@ This section for loading the dataset from the provided URL and displaying a summ
 
 ```{r loading, include=FALSE}
 # Load dataset
-df <- read.csv("kul100od1001.csv")
+df <- read.csv("Datasets/kul100od1001.csv")
 ```
 
 Here are some of the key attributes:
@@ -117,7 +117,7 @@ AnzHunde: Number of dogs
 # 3. Translation
 In this section, we duplicate and rename the dataframe df as df_EN for the English version. Then, translations for column names in English are defined. Following this, a function is employed to replace multiple patterns at once for content translation. Patterns and replacements for content translation, including translations for age groups, sexes, breed types, and dog colors, are defined. After applying the translation function across all columns, dog colors are also translated.
 
-```{r translation, include=FALSE}
+```{r translation, include=FALSE, cache=TRUE}
 
 # Duplicate and rename df for English version
 df_EN <- df

@@ -1,0 +1,53 @@
+---
+title: "Dog Ownership in Zurich: A 2015 Study"
+author: "DRAFT_1_Rina"
+date: "2024-03-18"
+output: html_document
+---
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(dplyr)
+library(plotly)
+library(ggplot2)
+library(stringr)
+
+df <- read.csv("kul100od1001.csv")
+
+# Duplicate and rename df for English version
+df_EN <- df
+
+# Define translations for column names in English
+colnames(df_EN) <- c("KeyDateYear", "DataStatusCd", "OwnerId", "OwnerAgeGroupCd", "OwnerAgeGroup", "OwnerAgeGroupSort", "OwnerSexCd", "OwnerSex", "OwnerSexSort", "DistrictCd", "District", "DistrictSort", "QuarCd", "Quar", "QuarSort", "PrimaryBreed", "SecondaryBreed", "MixedBreedCd", "MixedBreed", "MixedBreedSort", "BreedTypeCd", "BreedType", "BreedTypeSort", "DogBirthYear", "DogAgeGroupCd", "DogAgeGroup", "DogAgeGroupSort", "DogSexCd", "DogSex", "DogSexSort", "DogColor", "NumberOfDogs")
+
+# Define a function to replace multiple patterns at once
+replace_patterns <- function(text, patterns, replacements) {
+  for (i in seq_along(patterns)) {
+    text <- str_replace_all(text, patterns[i], replacements[i])
+  }
+  return(text)
+}
+
+# Define patterns and replacements for content translation
+patterns <- c("- bis ", "-Jährige", "männlich", "weiblich", "Keine", "Unbekannt", "Rassehund", "Mischling, beide Rassen bekannt", "Mischling, sekundäre Rasse unbekannt", "Mischling, beide Rassen unbekannt", "Kleinwüchsig", "Rassentypenliste I", "Rassentypenliste II")
+replacements <- c(" to ", " years old", "male", "female", "none", "Unknown", "Pedigree dog", "Mixed breed, both breeds known", "Mixed breed, secondary breed unknown", "Mixed breed, both breeds unknown", "Small stature", "Breed type list I", "Breed type list II")
+
+# Apply the function across all columns
+df_EN[] <- lapply(df_EN, function(x) replace_patterns(x, patterns, replacements))
+
+# Color translation - can be further customized based on your dataset
+color_patterns <- c("schwarz", "braun", "weiss", "grau", "silber", "rot", "gelb", "hell", "dunkel", "gestromt", "schimmel", "zweifarbig", "dreifarbig", "vierfarbig", "gemischt", "meliert", "hirschrot mit Maske", "löwenfarbig")
+color_replacements <- c("black", "brown", "white", "gray", "silver", "red", "yellow", "light", "dark", "brindle", "mold", "2 colors", "3 colors", "4 colors", "mixed", "mottled", "stag red with mask", "lion-colored")
+
+# Translate dog colors
+df_EN$DogColor <- replace_patterns(df_EN$DogColor, color_patterns, color_replacements)
+
+# Optional: Print unique values to check the translations
+print(unique(df_EN$MixedBreed))
+print(unique(df_EN$BreedType))
+print(unique(df_EN$DogColor))
+
+df  <- df_EN
+View(df)
+```
+
+

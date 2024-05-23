@@ -2,6 +2,7 @@
 title: "ML1_EDA_ShinyApp"
 output: html_document
 date: "2024-05-13"
+runtime: shiny
 ---
 # 1. Libraries
 This section loads the necessary R packages for data manipulation, visualization, and other tasks. If a package is not installed, it installs it first and then loads it.
@@ -99,7 +100,7 @@ This section for loading the dataset from the provided URL and displaying a summ
 
 ```{r loading, include=FALSE}
 # Load dataset
-df <- read.csv("kul100od1001.csv")
+df <- read.csv("Datasets/kul100od1001.csv")
 ```
 
 Here are some of the key attributes:
