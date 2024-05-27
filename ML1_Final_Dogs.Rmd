@@ -1402,7 +1402,7 @@ colnames(cm_binary_df) <- c("Prediction", "Reference", "Freq")
 ```
 
 
-```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE}
+```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE, fig.align='center'}
 
 # Confusion matrix plot
 ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
@@ -1445,10 +1445,10 @@ pred <- ROCR::prediction(pred_numeric,
 
 After running the code, the final model is a neural network with 16 input nodes, 15 hidden nodes, and 1 output node, totalling 271 weights. However, an evaluation of the confusion matrix and ROC curves indicates insufficient evidence to support the model's validity for the given variables. This issue might stem from the selection of variables; expanding the set to include more variables from the dataset might improve the model. Alternatively, it could be that an artificial neural network is not the most suitable model for addressing this particular research question.
 
-```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', include=TRUE, cache=TRUE}
+```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
-plot(perf, lwd=2, col="blue")
+plot(perf, lwd=2, col="darksalmon")
 abline(a=0, b=1)
 
 ```
