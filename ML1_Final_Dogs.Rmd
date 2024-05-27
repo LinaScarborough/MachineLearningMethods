@@ -1259,7 +1259,21 @@ summary(lm.counts.year)
 
 ### 3.5. Artificial Neural Network
 
-``` {r neuralnetwork_lib, include=FALSE}
+We start this chapter by posing a research question: _is a dog of pure or mixed breed, based on location and owner and dog’s characteristics?_
+
+An artificial neural network (ANN) is the algorithm of choice for this assessment due to its capability to handle complex, non-linear relationships within the dataset. Dogs' breed may depend on various interacting factors, such as age, size, location, and owner demographics, which ANNs can effectively capture and analyze. 
+
+Their scalability and adaptability make them robust for ongoing studies, while their multilayered learning allows the model to automatically identify the most significant features. We ultimately aim to accurately predict breed status and provide valuable insights for our suggested business project, as well as pet adoption agencies, veterinarians, or even urban planners of the city of Zurich.
+
+Continuing with the development of models, and answering the above, we now look into the implementation of an Artificial Neural Network using the packages `nnet` and `caret` in R. The resulting classification result for the dependent variable will be produced by the model considering variables of both numerical and categorical type.
+
+The target variable `MixedBreed` is of categorical type (factor in R), indicating the dog’s pedigree status, with 4 different possible responses, from pure breed to 3 different descriptors of breed mixing. For the sake of simplicity, the levels within the `MixedBreed` factor variable have been reduced to a binary response, indicating whether the dog is of pure pedigree or not. We consider that this response better fits the information needed for our business case. 
+
+As explained above, the response variables of choice pertain to characteristics of the dog owners (their age, sex, and district), as well as some characteristics of the dogs (dog age and sex). The predictors are the following: `OwnerAgeGroupCd`, `OwnerSexCd`, `DistrictCd`, `DogAgeGroupCd` and `DogSexCd`. Although the model results suggest that incorporating additional predictors should be done to improve the model's accuracy, we have kept the current selection for learning purposes.
+
+The libraries of choice are `nnet` and `caret`, the first one providing the functions for creating and training the model, and the latter providing an interface to further preprocess and train the model. This allowed to implement a 10-fold cross-validation during the training phase of the model building. It also allowed to establish a tune grid with various possible hyperparameters to test out different combinations and find the most optimal ones.
+
+``` {r neuralnetwork_libraries, include=FALSE}
 
 # Install dependencies
 
@@ -1286,7 +1300,7 @@ if (!require(ROCR, quietly = TRUE)) {
 
 ```
 
-```{r neuralnetwork, include=FALSE, cache=TRUE, cache.rebuild=FALSE}
+```{r neuralnetwork_sampling, include=FALSE, cache=TRUE, cache.rebuild=FALSE}
 
 # Select a subset of variables of interest
 variables_net <- c("OwnerAgeGroupCd",
@@ -1325,17 +1339,27 @@ trainIndex <- createDataPartition(df_net$BinaryMixedBreed,
 df_train <- df_net[trainIndex, ]
 df_test <- df_net[-trainIndex, ]
 
+```
 
-#### DEFINING THE ANN MODEL ####
+``` {r neuralnetwork_train, include=FALSE, cache=TRUE}
 
-# Define the control function for training
-train_control <- trainControl(method = "cv", number = 10)
-# Hyperparameters
-grid <- expand.grid(size = c(5, 10, 15), decay = c(0.01, 0.001, 0.0001))
+# Cache save location
+model_path <- "ML1_Final_Dogs_cache/nnet/breed_net.rds"
 
-# Train neural network model with selected features and hyperparameter tuning
-set.seed(123)
-breed_net <- train(BinaryMixedBreed ~ .,
+if (file.exists(model_path)) {
+  # Load the cached model
+  breed_net <- readRDS(model_path)
+} else {
+  
+  # Define the control function for training
+  train_control <- trainControl(method = "cv", number = 10)
+  
+  # Hyperparameters
+  grid <- expand.grid(size = c(5, 10, 15), decay = c(0.01, 0.001, 0.0001))
+  
+  set.seed(123)
+  # Train neural network model with selected features, hyperparameter tuning
+  breed_net <- train(BinaryMixedBreed ~ .,
                       data = df_train,
                       method = "nnet",
                       trControl = train_control,
@@ -1343,6 +1367,11 @@ breed_net <- train(BinaryMixedBreed ~ .,
                       linout = FALSE,           # For categorical response
                       trace = TRUE,             # To see what's happening live
                       maxit = 10000)            # Max. number of iterations
+
+  # Save the model to disk to ensure it is not re-trained
+  saveRDS(breed_net, model_path)
+  
+}
 
 ```
 
@@ -1373,7 +1402,7 @@ colnames(cm_binary_df) <- c("Prediction", "Reference", "Freq")
 ```
 
 
-```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all'}
+```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE}
 
 # Confusion matrix plot
 ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
@@ -1414,6 +1443,8 @@ pred <- ROCR::prediction(pred_numeric,
 
 ```
 
+After running the code, the final model is a neural network with 16 input nodes, 15 hidden nodes, and 1 output node, totalling 271 weights. However, an evaluation of the confusion matrix and ROC curves indicates insufficient evidence to support the model's validity for the given variables. This issue might stem from the selection of variables; expanding the set to include more variables from the dataset might improve the model. Alternatively, it could be that an artificial neural network is not the most suitable model for addressing this particular research question.
+
 ```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', include=TRUE, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
@@ -1421,6 +1452,8 @@ plot(perf, lwd=2, col="blue")
 abline(a=0, b=1)
 
 ```
+
+The *ROC Curve* displays a closeness to the diagonal, which raises the possibility that the model’s predictions are not accurate, and support the need to either review the model with more predictors or consider a different model to answer the question at hand altogether.
 
 ---
 
