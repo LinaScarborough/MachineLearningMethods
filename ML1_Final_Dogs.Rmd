@@ -112,9 +112,9 @@ As mentioned above, the main data has been sourced from the [opendata.swiss proj
 
 _This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, gender and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
 
-For the sake of a seamless workflow and easier interpretation of the variables within our group, a series of preparation measures have been undertaken with the dataset, which include the renaming of columns as well as certain string values, which have been translated to English from the original German version, as well as some cleaning procedures. 
+To ensure a seamless workflow and make variable interpretation easier for our group, we have undertaken several preparatory steps with the dataset. These include renaming columns and translating certain string values from German to English, along with performing some cleaning procedures.
 
-The main source of data is the `kul100od1001.csv` file, which contains a collection of 70,967 listings with 33 variables.
+The main source of data is the `kul100od1001.csv` file, which contains a collection of 70,967 dog registrations with 33 variables.
 
 ```{r loading, include=FALSE}
 
@@ -123,7 +123,7 @@ df <- read.csv("Datasets/kul100od1001.csv")
 
 ```
 
-For the English version, translations for the column names are defined and a function is employed to replace multiple patterns at once for content translation. This includes translations for age groups, sexes, breed types, and dog colors. After applying the translation function across all relevant columns, dog colors are also translated. From this point forward, we will use the translated names for variables and items.
+For the English version, translations for the column names are defined and a function is employed to replace multiple patterns at once for content translation. This includes translations for age groups, sexes, breed types, and dog colors. After applying the translation function across all relevant columns, dog colors are also translated. From this point forward, we will refer to variables and items exclusively by their translated English names.
 
 ```{r translation, include=FALSE, cache=TRUE}
 
@@ -227,8 +227,8 @@ As can be seen in the structure of the data, the set comprises several observati
 ### 2.2.1. Analyzing Diversity in Dataset Features: Years, Owner IDs, and Age Groups
 
 This series of R code snippets delves into the examination of key
-features within the new_df DataFrame, focusing on the identification and
-analysis of unique entries for KeyDateYear, OwnerId, and OwnerAgeGroup.
+features within the `new_df` dataframe, focusing on the identification and
+analysis of unique entries for `KeyDateYear`, `OwnerId`, and `OwnerAgeGroup`.
 Each code section is designed to extract unique values, count these
 entries, and where applicable, visualize the distribution. Such analysis
 is integral for understanding the dataset's diversity across different
@@ -256,7 +256,7 @@ print(number_of_unique_Owner)
 
 ### 2.2.2. Unique owners by year, by age group and by gender
 
-This section presents an interactive visualization that displays unique Owner IDs by age group and gender for a selected year. The user interface allows the selection of a year and a gender, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
+This section presents an interactive visualization that displays unique owner IDs by age group and gender for a selected year. The user interface allows the selection of a year and a gender, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
 
 ```{r shiny, unique owners by year, by age group and by gender, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -458,7 +458,7 @@ shinyApp(ui = ui, server = server)
 ```
 
 
-### 2.2.5. Heatmap of total number of dogs per year 
+### 2.2.5. Heatmap of total number of registered dogs per year 
 
 A heatmap was created to illustrate the distribution of dogs based on the gender and age group of their owners across different years. The data was organized by grouping it according to the year, owner's age group, and gender. Separate heatmaps were generated for each year to visualize the data for that specific period.
 
@@ -515,7 +515,7 @@ shinyApp(ui = ui, server = server)
 
 #### 2.2.6.1. Total Count of Dogs by District
 
-The annual distribution of dog populations across various districts is examined using an interactive Shiny application. Users can select a year to view the total count of dogs by district for that specific year. The data is processed and visualized to provide insights into the distribution patterns over time.
+The annual distribution of dog registrations across various districts is examined using an interactive Shiny application. Users can select a year to view the total count of dogs by district for that specific year. The data is processed and visualized to provide insights into the distribution patterns over time.
 
 ```{r shiny, total count of dogs by district, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -828,7 +828,7 @@ shinyApp(ui = ui, server = server)
 
 #### 2.2.6.5. By district, Breed Type and Dogs's Gender
 
-In an effort to provide a more comprehensive analysis of dog populations within various districts, the latest R script has been enhanced to include not only total counts by district but also a detailed breakdown by breed type and gender. This enhancement aims to offer a deeper understanding of the diversity and demographics of canine populations across different regions.
+In an effort to provide a more comprehensive analysis of dog populations within various districts, the latest R script has been enhanced to include not only total counts by district but also a detailed breakdown by breed type and gender. This enhancement aims to offer a deeper understanding of the diversity and demographics of canine registrations across different regions.
 
 ```{r shiny, total count of dogs by breedtype and dogs gender, echo=FALSE, message = FALSE, warning=FALSE}
 
@@ -1259,13 +1259,34 @@ summary(lm.counts.year)
 
 ### 3.5. Artificial Neural Network
 
-```{r neuralnetwork, include=FALSE, cache=TRUE}
+``` {r neuralnetwork_lib, include=FALSE}
 
-# Load required packages
-library(nnet)           # For the ANNs
-library(caret)          # For model training and evaluation
-library(gamlss.add)
-library(ROCR)           # For the quality assessment
+# Install dependencies
+
+# For the ANNs
+if (!require(nnet, quietly = TRUE)) {
+  install.packages("nnet")
+  library(nnet)
+}
+# For model training and evaluation
+if (!require(caret, quietly = TRUE)) {
+  install.packages("caret")
+  library(caret)
+}
+# For the visualization
+if (!require(gamlss.add, quietly = TRUE)) {
+  install.packages("gamlss.add")
+  library(gamlss.add)
+}
+# For the quality assessment
+if (!require(ROCR, quietly = TRUE)) {
+  install.packages("ROCR")
+  library(ROCR)
+}
+
+```
+
+```{r neuralnetwork, include=FALSE, cache=TRUE, cache.rebuild=FALSE}
 
 # Select a subset of variables of interest
 variables_net <- c("OwnerAgeGroupCd",
@@ -1352,7 +1373,7 @@ colnames(cm_binary_df) <- c("Prediction", "Reference", "Freq")
 ```
 
 
-```{r neuralnetwork_plots, include=TRUE, cache=TRUE}
+```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all'}
 
 # Confusion matrix plot
 ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
@@ -1393,7 +1414,7 @@ pred <- ROCR::prediction(pred_numeric,
 
 ```
 
-```{r neuralnetwork_ROC, include=TRUE, cache=TRUE}
+```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', include=TRUE, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
 plot(perf, lwd=2, col="blue")
@@ -1404,10 +1425,6 @@ abline(a=0, b=1)
 ---
 
 ### 3.6. Support Vector Machine Model
-
----
-
-### 3.7. Optimisation Problem
 
 ---
 
