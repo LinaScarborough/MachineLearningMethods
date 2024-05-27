@@ -1259,13 +1259,34 @@ summary(lm.counts.year)
 
 ### 3.5. Artificial Neural Network
 
-```{r neuralnetwork, include=FALSE, cache=TRUE}
+``` {r neuralnetwork_lib, include=FALSE}
 
-# Load required packages
-library(nnet)           # For the ANNs
-library(caret)          # For model training and evaluation
-library(gamlss.add)
-library(ROCR)           # For the quality assessment
+# Install dependencies
+
+# For the ANNs
+if (!require(nnet, quietly = TRUE)) {
+  install.packages("nnet")
+  library(nnet)
+}
+# For model training and evaluation
+if (!require(caret, quietly = TRUE)) {
+  install.packages("caret")
+  library(caret)
+}
+# For the visualization
+if (!require(gamlss.add, quietly = TRUE)) {
+  install.packages("gamlss.add")
+  library(gamlss.add)
+}
+# For the quality assessment
+if (!require(ROCR, quietly = TRUE)) {
+  install.packages("ROCR")
+  library(ROCR)
+}
+
+```
+
+```{r neuralnetwork, include=FALSE, cache=TRUE}
 
 # Select a subset of variables of interest
 variables_net <- c("OwnerAgeGroupCd",
