@@ -1,0 +1,1200 @@
+---
+title: "ML1_Final_EDA_ShinyApp_included"
+date: "2024-05-26"
+output: 
+  html_document:
+    df_print: paged
+    theme: "sandstone"
+    css: "css/style.css"
+runtime: shiny
+---
+
+# 1. Libraries
+
+This section loads the necessary R packages for data manipulation,
+visualization, and other tasks. If a package is not installed, it
+installs it first and then loads it.
+
+```{r setup, include=FALSE}
+# Load required libraries
+# dplyr: For data manipulation
+if (!require(dplyr, quietly = TRUE)) {
+  install.packages("dplyr")
+  library(dplyr)
+}
+
+# stringr: For string manipulation
+if (!require(stringr, quietly = TRUE)) {
+  install.packages("stringr")
+  library(stringr)
+}
+
+# plotly: For interactive plots
+if (!require(plotly, quietly = TRUE)) {
+  install.packages("plotly")
+  library(plotly)
+}
+
+# ggplot2: For data visualization
+if (!require(ggplot2, quietly = TRUE)) {
+  install.packages("ggplot2")
+  library(ggplot2)
+}
+
+# readxl: For reading Excel files
+if (!require(readxl, quietly = TRUE)) {
+  install.packages("readxl")
+  library(readxl)
+}
+
+# readr: For reading data
+if (!require(readr, quietly = TRUE)) {
+  install.packages("readr")
+}
+library(readr)
+
+# treemapify: For creating treemaps
+if (!require(treemapify, quietly = TRUE)) {
+  install.packages("treemapify")
+}
+library(treemapify)
+
+# scales: For scale functions
+if (!require(scales, quietly = TRUE)) {
+  install.packages("scales")
+}
+library(scales)
+
+# patchwork: For combining ggplots
+if (!require(patchwork, quietly = TRUE)) {
+  install.packages("patchwork")
+}
+library(patchwork)
+
+# gridExtra: For arranging plots
+if (!require(gridExtra, quietly = TRUE)) {
+  install.packages("gridExtra")
+}
+library(gridExtra)
+
+# rcolorbrewer
+if (!require(RColorBrewer, quietly = TRUE)) {
+  install.packages("RColorBrewer")
+}
+library(RColorBrewer)
+
+ # forcats
+if (!require(forcats, quietly = TRUE)) {
+  install.packages("forcats")
+}
+library(forcats)
+
+ # shiny
+if (!require(shiny, quietly = TRUE)) {
+  install.packages("shiny")
+}
+library(shiny)
+
+ # treemap
+if (!require(treemap, quietly = TRUE)) {
+  install.packages("treemap")
+} 
+library(treemap)
+
+```
+
+# 2. Dataset
+
+This section loads the dataset from the provided URL and displays a summary of the data, providing an overview of its structure and contents.
+
+```{r loading, include=FALSE}
+# Load dataset
+df <- read.csv("kul100od1001.csv")
+```
+
+### Key Attributes of the Dataset
+
+1. **StichtagDatJahr**: Year of the data record.
+2. **HalterId**: Unique identifier for the pet owner.
+3. **AlterV10Cd, AlterV10Lang, AlterV10Sort**: Codes, descriptions, and sorting for the age group of the pet owner.
+4. **SexCd, SexLang, SexSort**: Codes, descriptions, and sorting for the gender of the pet owner.
+5. **KreisCd, KreisLang, KreisSort**: Codes, descriptions, and sorting for the district.
+6. **QuarCd, QuarLang, QuarSort**: Codes, descriptions, and sorting for the quarter.
+7. **Rasse1Text, Rasse2Text**: Primary and secondary breed descriptions of the pet.
+8. **RasseMischlingCd, RasseMischlingLang, RasseMischlingSort**: Codes, descriptions, and sorting for whether the pet is a mixed breed.
+9. **RassentypCd, RassentypLang, RassentypSort**: Codes, descriptions, and sorting for the type of breed.
+10. **GebDatHundJahr**: Year of birth of the pet.
+11. **AlterVHundCd, AlterVHundLang, AlterVHundSort**: Codes, descriptions, and sorting for the age group of the pet.
+12. **SexHundCd, SexHundLang, SexHundSort**: Codes, descriptions, and sorting for the gender of the pet.
+13. **HundefarbeText**: Color of the pet.
+14. **AnzHunde**: Number of dogs.
+
+
+# 3. Translation
+
+In this section, English translations for the column names are defined, and a function is employed to replace multiple patterns at once for content translation. This includes translations for age groups, sexes, breed types, and dog colors. After applying the translation function across all relevant columns, dog colors are also translated.
+
+```{r translation, include=FALSE}
+
+# Duplicate and rename df for English version
+df_EN <- df
+
+# Define translations for column names in English
+colnames(df_EN) <- c("KeyDateYear", "DataStatusCd", "OwnerId", "OwnerAgeGroupCd", "OwnerAgeGroup", "OwnerAgeGroupSort", "OwnerSexCd", "OwnerSex", "OwnerSexSort", "DistrictCd", "District", "DistrictSort", "QuarCd", "Quar", "QuarSort", "PrimaryBreed", "SecondaryBreed", "MixedBreedCd", "MixedBreed", "MixedBreedSort", "BreedTypeCd", "BreedType", "BreedTypeSort", "DogBirthYear", "DogAgeGroupCd", "DogAgeGroup", "DogAgeGroupSort", "DogSexCd", "DogSex", "DogSexSort", "DogColor", "NumberOfDogs")
+
+# Define a function to replace multiple patterns at once
+replace_patterns <- function(text, patterns, replacements) {
+  for (i in seq_along(patterns)) {
+    text <- str_replace_all(text, patterns[i], replacements[i])
+  }
+  return(text)
+}
+
+# Define patterns and replacements for content translation
+patterns <- c("- bis ", "-Jährige", "männlich", "weiblich", "Keine", "Unbekannt", "Rassehund", "Mischling, beide Rassen bekannt", "Mischling, sekundäre Rasse unbekannt", "Mischling, beide Rassen unbekannt", "Kleinwüchsig", "Rassentypenliste I", "Rassentypenliste II")
+replacements <- c(" to ", " years old", "male", "female", "none", "Unknown", "Pedigree dog", "Mixed breed, both breeds known", "Mixed breed, secondary breed unknown", "Mixed breed, both breeds unknown", "Small stature", "Breed type list I", "Breed type list II")
+
+# Apply the function across all columns
+df_EN[] <- lapply(df_EN, function(x) replace_patterns(x, patterns, replacements))
+
+# Color translation - can be further customized based on your dataset
+color_patterns <- c("schwarz", "braun", "weiss", "grau", "silber", "rot", "gelb", "hell", "dunkel", "gestromt", "schimmel", "zweifarbig", "dreifarbig", "vierfarbig", "gemischt", "meliert", "hirschrot mit Maske", "löwenfarbig")
+color_replacements <- c("black", "brown", "white", "gray", "silver", "red", "yellow", "light", "dark", "brindle", "mold", "2 colors", "3 colors", "4 colors", "mixed", "mottled", "stag red with mask", "lion-colored")
+
+# Translate dog colors
+df_EN$DogColor <- replace_patterns(df_EN$DogColor, color_patterns, color_replacements)
+
+# Optional: Print unique values to check the translations
+print(unique(df_EN$MixedBreed))
+print(unique(df_EN$BreedType))
+print(unique(df_EN$DogColor))
+
+View(df_EN)
+
+write.csv(df_EN, "df_EN.csv", row.names = FALSE)
+```
+
+# 4. Unique Owner IDs
+
+This step involves identifying and marking the initial occurrence of each OwnerId as unique within the dataset. This distinction facilitates further analyses that may require the identification of distinct entries.
+
+
+```{r df_unique_OwnerId, include=FALSE}
+df_EN$unique_OwnerId <- !duplicated(df_EN$OwnerId)
+View(df_EN)
+
+```
+
+# 5. Refined Dataset
+
+This procedure involves extracting a subset of relevant columns from the comprehensive dataset, creating a streamlined DataFrame named new_df. The subset includes essential fields such as KeyDateYear, OwnerId, and details regarding the dogs, including PrimaryBreed and DogBirthYear. Additionally, the NumberOfDogs column is converted from its original format to a numeric type, ensuring that subsequent data analysis can utilize numerical operations.
+
+```{r new_df, include=FALSE}
+
+# Create a new DataFrame with selected columns and convert 'NumberOfDogs' to numeric
+new_df <- df_EN %>%
+  select(KeyDateYear, OwnerId, OwnerAgeGroup, OwnerSex, DistrictSort, QuarCd, PrimaryBreed, SecondaryBreed, MixedBreed, BreedType, DogBirthYear, DogAgeGroupCd, DogSex, NumberOfDogs, unique_OwnerId) %>%
+  mutate(NumberOfDogs = as.numeric(as.character(NumberOfDogs)))
+
+View(new_df)
+
+```
+
+# 6. Analyzing Diversity in Dataset Features: Years, Owner IDs, and Age Groups
+
+This series of R code snippets delves into the examination of key
+features within the new_df DataFrame, focusing on the identification and
+analysis of unique entries for KeyDateYear, OwnerId, and OwnerAgeGroup.
+Each code section is designed to extract unique values, count these
+entries, and where applicable, visualize the distribution. Such analysis
+is integral for understanding the dataset's diversity across different
+dimensions, helping to highlight temporal coverage, ownership
+uniqueness, and demographic variations among owners.
+
+```{r unique_years, include=FALSE}
+
+# Extract and count unique years
+unique_years <- unique(new_df$KeyDateYear)
+number_of_unique_years <- length(unique_years)
+print(number_of_unique_years)
+print(unique_years)
+
+```
+
+```{r unique_OwnerId, include=FALSE}
+
+# Extract and count unique Owner IDs
+unique_Owner <- unique(new_df$OwnerId)
+number_of_unique_Owner <- length(unique_Owner)
+print(number_of_unique_Owner)
+
+```
+
+## 6.1. Unique owners by year, by age group and by gender
+
+This section presents an interactive visualization that displays unique Owner IDs by age group and gender for a selected year. The user interface allows the selection of a year and a gender, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
+
+```{r shiny, unique owners by year, by age group and by gender, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Define UI
+ui <- fluidPage(
+    titlePanel("Unique Owner IDs by Age Group and Gender"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", 
+                        choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedGender", "Select Gender:",
+                        choices = c("All" = "all", "Male" = "male", "Female" = "female")),
+            helpText("Displays unique owner IDs by age group and selected gender for the chosen year.")
+        ),
+        mainPanel(
+            plotOutput("genderPlot")
+        )
+    )
+)
+
+# Define server logic
+server <- function(input, output) {
+    output$genderPlot <- renderPlot({
+        # Aggregate unique Owner IDs by Age Group, Year, and Gender
+        if (input$selectedGender == "all") {
+            # Sum across both genders
+            unique_owner_counts_gender <- new_df %>%
+                group_by(KeyDateYear, OwnerAgeGroup) %>%
+                summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop')
+        } else {
+            # Filter for a specific gender
+            unique_owner_counts_gender <- new_df %>%
+                group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
+                summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop') %>%
+                filter(OwnerSex == input$selectedGender)
+        }
+
+        # Adjust factor levels
+        unique_owner_counts_gender$OwnerAgeGroup <- factor(unique_owner_counts_gender$OwnerAgeGroup,
+                                                           levels = unique(new_df$OwnerAgeGroup[order(new_df$OwnerAgeGroup)]))
+
+        # Filter data for the specific year
+        data_for_year_gender <- filter(unique_owner_counts_gender, KeyDateYear == as.numeric(input$selectedYear))
+        
+        # Create the plot
+        ggplot(data_for_year_gender, aes(x = OwnerAgeGroup, y = UniqueOwnerCountGender, fill = OwnerAgeGroup)) +
+            geom_bar(stat = "identity", position = "dodge") +
+            geom_text(aes(label = UniqueOwnerCountGender), vjust = -0.5, color = "black", size = 3.5) +
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            theme_minimal() +
+            labs(title = paste("Unique Owner IDs by Age Group and", input$selectedGender, "in", input$selectedYear),
+                 x = "Owner Age Group",
+                 y = "Count of Unique Owner IDs") +
+            scale_fill_brewer(palette = "Paired") +
+            scale_y_continuous(limits = c(0, max(2000, max(data_for_year_gender$UniqueOwnerCountGender) + 500)), breaks = seq(0, 2000, by = 500)) +
+            scale_x_discrete(labels = function(x) {
+                x <- gsub("[0-9]+ to [0-9]+ years old", "", x)
+                gsub("Unknown", "", x)
+            })
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## 6.2. Unique owners by age group over years
+
+The following visualization shows the count of unique Owner IDs across different age groups over the years. The plot is generated by aggregating unique Owner IDs by age group and year, adjusting factor levels, and creating a line plot.
+
+```{r cs seasonal trend of Age Group, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Aggregate unique Owner IDs by Age Group and Year
+unique_owner_counts <- new_df %>%
+  group_by(KeyDateYear, OwnerAgeGroup) %>%
+  summarise(UniqueOwnerCount = n_distinct(OwnerId), .groups = 'drop')
+
+# Adjust factor levels in the aggregated data before plotting
+unique_owner_counts <- unique_owner_counts %>%
+  arrange(desc(UniqueOwnerCount)) %>%
+  mutate(OwnerAgeGroup = fct_inorder(OwnerAgeGroup),
+         KeyDateYear = as.numeric(as.character(KeyDateYear)))  # Convert KeyDateYear to numeric
+
+# Create the line plot for all years with a line per age group
+p <- ggplot(unique_owner_counts, aes(x = KeyDateYear, y = UniqueOwnerCount, group = OwnerAgeGroup, color = OwnerAgeGroup)) +
+  geom_line(size = 1) +  # Add line
+  geom_point(size = 3) +  # Add points
+  geom_hline(yintercept = c(100, 500, 1000, 1500, 2000), linetype = "dashed", color = "red") +
+  theme_minimal() +
+  labs(title = "Unique Owner IDs by Age Group Over Years",
+       x = "Year",
+       y = "Count of Unique Owner IDs") +
+  scale_color_brewer(palette = "Paired") +  # Use color to differentiate lines
+  scale_y_continuous(limits = c(0, 2500), breaks = seq(0, 2500, by = 500)) +
+  scale_x_continuous(breaks = seq(min(unique_owner_counts$KeyDateYear), max(unique_owner_counts$KeyDateYear), by = 1))  # Define breaks in the x-axis scale to show each year
+
+# Print the plot
+print(p)
+
+```
+
+# 7. Yearly Dog Counts
+
+After confirming successful conversion, we aggregated the data to compute the total number of dogs per year. The resulting counts were then visualized using histograms to illustrate the distribution over the years.
+
+Furthermore, to understand the trend in dog population over time, we calculated the percentage change between consecutive years. This allowed us to identify any notable fluctuations or patterns in the data.
+
+```{r shiny, yearly dog counts, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Convert NumberOfDogs to numeric
+new_df <- new_df %>% 
+  mutate(NumberOfDogs = as.numeric(NumberOfDogs))
+
+# Check for any conversion problems
+sum(is.na(new_df$NumberOfDogs))
+
+# Convert KeyDateYear to numeric
+new_df$KeyDateYear <- as.numeric(as.character(new_df$KeyDateYear))
+
+# Aggregate data to get total number of dogs per year
+yearly_dog_counts <- new_df %>%
+  group_by(KeyDateYear) %>%
+  summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop')
+
+# Calculate the percentage change for annotations
+yearly_dog_counts <- yearly_dog_counts %>%
+  arrange(KeyDateYear) %>%
+  mutate(Change = c(NA, diff(TotalDogs)),
+         PercentChange = Change / lag(TotalDogs) * 100)
+
+# Define UI
+ui <- fluidPage(
+  titlePanel("Dog Population Analysis"),
+  sidebarLayout(
+    sidebarPanel(
+      helpText("Click on a year in the bar plot to see the percentage change in dog population."),
+      plotOutput("dogPlot", click = "plot_click"),
+      verbatimTextOutput("click_info")
+    ),
+    mainPanel(
+      plotOutput("dogChangePlot")
+    )
+  )
+)
+
+# Define server logic
+server <- function(input, output) {
+  output$dogPlot <- renderPlot({
+    ggplot(yearly_dog_counts, aes(x = KeyDateYear, y = TotalDogs)) +
+      geom_col(fill = "skyblue", color = "black") +
+      geom_hline(yintercept = c(2500, 5000, 7500), linetype = "dashed", color = "red") +  
+      theme_minimal() +
+      labs(title = "Total Number of Dogs per Year",
+           x = "Year",
+           y = "Total Number of Dogs") +
+      scale_x_continuous(breaks = yearly_dog_counts$KeyDateYear, 
+                         labels = yearly_dog_counts$KeyDateYear) +  
+      scale_y_continuous(labels = scales::comma, 
+                         breaks = seq(0, 10000, by = 1000),
+                         limits = c(0, 10000)) + 
+      theme(axis.text.x = element_text(angle = 45, hjust = 1))
+  })
+  
+  output$click_info <- renderPrint({
+    if (!is.null(input$plot_click)) {
+      year_clicked <- round(input$plot_click$x)
+      year_data <- yearly_dog_counts %>%
+        filter(KeyDateYear == year_clicked)
+      if (nrow(year_data) > 0) {
+        cat("Year:", year_data$KeyDateYear, "\n")
+        cat("Total Dogs:", year_data$TotalDogs, "\n")
+        cat("Percentage Change:", sprintf("%.1f%%", year_data$PercentChange), "\n")
+      } else {
+        cat("No data available for the selected year.")
+      }
+    }
+  })
+  
+  output$dogChangePlot <- renderPlot({
+    ggplot(yearly_dog_counts, aes(x = KeyDateYear, y = TotalDogs)) +
+      geom_col(fill = "skyblue", color = "black") +
+      geom_hline(yintercept = c(2500, 5000, 7500), linetype = "dashed", color = "red") +  
+      geom_smooth(method = "lm", color = "red", linetype = "dashed", se = FALSE) +  
+      geom_text(data = yearly_dog_counts, aes(label = sprintf("%.1f%%", PercentChange)), 
+                vjust = -1.5, hjust = 0.5, color = "darkgreen", size = 3.5) +
+      theme_minimal() +
+      labs(title = "Total Number of Dogs per Year",
+           x = "Year",
+           y = "Total Number of Dogs") +
+      scale_x_continuous(breaks = yearly_dog_counts$KeyDateYear) +
+      scale_y_continuous(labels = scales::comma, 
+                         breaks = seq(0, 10000, by = 1000),  
+                         limits = c(0, 10000)) +  
+      theme(axis.text.x = element_text(angle = 45, hjust = 1),
+            legend.position = "bottom")
+  })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+
+# 8. Heatmap of total number of dogs per year 
+
+A heatmap was created to illustrate the distribution of dogs based on the gender and age group of their owners across different years. The data was organized by grouping it according to the year, owner's age group, and gender. Separate heatmaps were generated for each year to visualize the data for that specific period.
+
+Each heatmap represents the total number of dogs in various age groups, categorized by the gender of their owners. The color gradient within the heatmap indicates the intensity of dog ownership, with warmer colors representing higher dog counts.
+
+```{r shiny, heatmap, echo=FALSE, message=FALSE, warning=FALSE}
+
+ui <- fluidPage(
+    titlePanel("Heatmap of Unique Owners by Gender and Age Group"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", 
+                        choices = unique(new_df$KeyDateYear)),
+            helpText("Displays a heatmap of unique owner counts by age group and gender for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("ownerHeatmap")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$ownerHeatmap <- renderPlot({
+        # Prepare the data
+        owner_counts <- new_df %>%
+          select(KeyDateYear, OwnerAgeGroup, OwnerSex, OwnerId) %>%
+          distinct(KeyDateYear, OwnerAgeGroup, OwnerSex, OwnerId) %>%
+          group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
+          summarize(UniqueOwners = n(), .groups = 'drop')
+
+        # Filter data for the specific year selected by user
+        yearly_data <- filter(owner_counts, KeyDateYear == as.numeric(input$selectedYear))
+
+        # Create the heatmap
+        p <- ggplot(yearly_data, aes(x = OwnerSex, y = OwnerAgeGroup, fill = UniqueOwners)) +
+            geom_tile() +
+            scale_fill_gradientn(colors = brewer.pal(11, "Spectral"), limits = c(0, max(yearly_data$UniqueOwners, na.rm = TRUE)), name = "Total Owners") +
+            theme_minimal() +
+            labs(title = paste("Heatmap of Unique Owners by Gender and Age Group in", input$selectedYear),
+                 x = "Owner's Gender",
+                 y = "Owner's Age Group",
+                 fill = "Number of Unique Owners") +
+            theme(axis.text.y = element_text(angle = 45, hjust = 1))
+        
+        # Return the plot
+        p
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+# 8. Total Count of Dogs
+
+## 8.1. Total Count of Dogs by District
+
+The annual distribution of dog populations across various districts is examined using an interactive Shiny application. Users can select a year to view the total count of dogs by district for that specific year. The data is processed and visualized to provide insights into the distribution patterns over time.
+
+```{r shiny, total count of dogs by district, echo=FALSE, message=FALSE, warning=FALSE}
+
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", 
+                        choices = unique(new_df$KeyDateYear)),
+            helpText("Displays the total count of dogs by district for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("dogPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$dogPlot <- renderPlot({
+        # Filter and aggregate data based on the selected year, excluding District 15
+        yearly_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(DistrictSort), DistrictSort != "15") %>%
+            group_by(DistrictSort) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(desc(TotalDogs))  # Arrange by TotalDogs in descending order
+
+        # Create the bar plot
+        p <- ggplot(yearly_data, aes(x = reorder(DistrictSort, -TotalDogs), y = TotalDogs, fill = DistrictSort)) +
+            geom_col() +
+            geom_text(aes(label = TotalDogs), vjust = -0.3, color = "black", size = 3.5) +  # Add dog counts on bars
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            scale_fill_viridis_d(name = "District") +
+            scale_y_continuous(limits = c(0, 2000), breaks = seq(0, 2000, by = 500)) +
+            theme_minimal() +
+            labs(title = paste("Total Count of Dogs by District in", input$selectedYear),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                  legend.position = "none")
+        
+        return(p)
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## 8.2. Total Count of Dogs by District with Dogs'gender
+
+To enhance understanding of the distribution of dogs across different districts and introduce a gender perspective into the analysis, the approach has been modified to include a breakdown by gender. This adjustment allows observation of not only the geographical distribution but also gender dynamics within the dog population each year.
+
+```{r shiny, total count of dogs by district and dogs gender, echo=FALSE, message=FALSE, warning=FALSE}
+
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District and Gender"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", 
+                        choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedGender", "Select Gender:",
+                        choices = c("All" = "all", "Male" = "male", "Female" = "female")),
+            helpText("Displays the total count of dogs by district and gender for the selected year, ordered by total count.")
+        ),
+        mainPanel(
+            plotOutput("dogPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$dogPlot <- renderPlot({
+        # Filter data based on the selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), 
+                   !is.na(DistrictSort), 
+                   DistrictSort != "15")  # Exclude District 15
+
+        # Apply gender filter if not "All"
+        if (input$selectedGender != "all") {
+            filtered_data <- filtered_data %>%
+                filter(DogSex == input$selectedGender)
+        }
+
+        # Aggregate data by district and optionally by gender
+        yearly_data <- filtered_data %>%
+            group_by(DistrictSort, DogSex) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            ungroup() %>%
+            arrange(desc(TotalDogs))  # Order by total dogs in descending order
+
+        # Create the bar plot
+        p <- ggplot(yearly_data, aes(x = reorder(DistrictSort, -TotalDogs), y = TotalDogs, fill = DogSex)) +
+            geom_col(position = position_dodge()) +
+            geom_text(aes(label = TotalDogs), vjust = -0.3, color = "black", size = 3.5) +  # Add dog counts on bars
+            geom_hline(yintercept = c(100, 500), linetype = "dashed", color = "red") +
+            scale_fill_manual(values = c("male" = "green", "female" = "violet")) + 
+            scale_y_continuous(limits = c(0, 800), breaks = seq(0, 800, by = 100)) +
+            theme_minimal() +
+            labs(title = paste("Total Count of Dogs by District and Dog gender in", input$selectedYear),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1),
+                  legend.position = "bottom")
+
+        return(p)
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## 8.3. By district and Unique Owners' gender
+
+This Shiny application provides an interactive visualization of the total count of dogs by district and owner's gender for a selected year. Users can select a year and the gender of the owner to explore the distribution of dogs across different districts, facilitating insights into demographic and geographic trends in dog ownership.
+
+```{r shiny, total count of dogs by unique owners gender, echo=FALSE, message=FALSE, warning=FALSE}
+
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District and Owner's Gender"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedGender", "Select Owner's gender:", choices = c("Male" = "male", "Female" = "female")),
+            helpText("Displays the total count of dogs by district and gender for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("dogPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$dogPlot <- renderPlot({
+        # Filter data based on the selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(DistrictSort), DistrictSort != "")
+
+        # If 'All' is not selected, further filter by gender
+        if (input$selectedGender != "All") {
+            filtered_data <- filtered_data %>%
+                filter(OwnerSex == input$selectedGender)
+        }
+
+        # Aggregate data by district and optionally by gender
+        aggregated_data <- filtered_data %>%
+            group_by(DistrictSort) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(desc(TotalDogs))
+
+        # Create the plot using reordered DistrictSort based on TotalDogs
+        p <- ggplot(aggregated_data, aes(x = reorder(DistrictSort, -TotalDogs), y = TotalDogs, fill = DistrictSort)) +
+            geom_col() +
+            geom_text(aes(label = TotalDogs), vjust = -0.3) +
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            scale_fill_viridis_d() +
+            theme_minimal() +
+            labs(title = paste("Total Count of Dogs by District in", input$selectedYear,
+                               if(input$selectedGender != "All") paste("—", input$selectedGender) else ""),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1),
+                  legend.position = "none")  # Optionally remove the legend
+
+        return(p)
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## 8.4. By district and Breed Type
+
+To deepen the analysis of dog populations across different districts annually, the R script incorporates an additional layer of granularity by assessing dog counts not only by district but also by breed type. This enhancement provides a more detailed view of the diversity within the canine populations across various districts each year.
+
+### version 1
+
+```{r shiny, total count of dogs by breedtype, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Define UI
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District and Breed Type"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedBreedType", "Select Breed Type:", 
+                        choices = c("All" = "All", unique(new_df$BreedType))),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
+            helpText("Displays the total count of dogs by district and selected breed type for the selected year, excluding District 15.")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+# Define server logic
+server <- function(input, output) {
+    output$breedPlot <- renderPlot({
+        # Filter data based on the selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
+        
+        # Convert DistrictSort to a factor with levels from 1 to 12
+        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
+
+        # Optionally include/exclude unknown breeds based on checkbox input
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(BreedType != "Unknown")
+        }
+
+        # Filter by selected breed type if not 'All'
+        if (input$selectedBreedType != "All") {
+            filtered_data <- filtered_data %>%
+                filter(BreedType == input$selectedBreedType)
+        }
+
+        # Aggregate data by district and breed type
+        breed_data <- filtered_data %>%
+            group_by(DistrictSort, BreedType) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(DistrictSort, desc(TotalDogs)) %>%
+            group_by(DistrictSort) %>%
+            top_n(10, wt = TotalDogs) %>%
+            ungroup()
+
+        # Generate the plot
+        p <- ggplot(breed_data, aes(x = DistrictSort, y = TotalDogs, fill = BreedType)) +
+            geom_col(position = "stack") +
+            scale_fill_viridis_d() +
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            scale_y_continuous(limits = c(0, max(1700, max(breed_data$TotalDogs, na.rm = TRUE))), breaks = seq(0, 1700, by = 100)) +
+            theme_minimal() +
+            labs(title = paste("Top 10 Breed Types by Total Count of Dogs in", input$selectedYear),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+        return(p)
+    })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+```
+
+### version 2
+
+```{r shiny, total count of dogs by breedtype 2, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Define UI
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District and Breed Type"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
+            helpText("Displays the total count of dogs by district and breed type for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+# Define server logic
+server <- function(input, output) {
+    output$breedPlot <- renderPlot({
+        # Filter data based on the selected year and handle unknown breed types
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
+        
+        # Convert DistrictSort to a factor with levels from 1 to 12
+        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
+
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(BreedType != "Unknown")
+        }
+
+        # Summarize total dogs by district and breed type
+        breed_data <- filtered_data %>%
+            group_by(DistrictSort, BreedType) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            ungroup() %>%
+            mutate(Position = as.numeric(DistrictSort))  # Position adjustment
+
+        # Create the plot with bars and points
+        p <- ggplot() +
+            geom_bar(data = breed_data, aes(x = DistrictSort, y = TotalDogs, fill = DistrictSort), stat = "identity") +
+            geom_point(data = breed_data, aes(x = Position, y = TotalDogs, color = BreedType, shape = BreedType), size = 3, position = position_jitterdodge(jitter.width = 0.2)) +
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            scale_fill_viridis_d(name = "District", guide = "none") +
+            scale_shape_manual(values = seq(1, 20)) +
+            scale_size(range = c(1, 6)) +
+            scale_y_continuous(limits = c(0, 2000), breaks = seq(0, 2000, by = 500)) +
+            theme_minimal() +
+            labs(title = paste("Total Count of Dogs by District in", input$selectedYear),
+                 subtitle = "Points indicate count by breed type",
+                 x = "District",
+                 y = "Total Count of Dogs") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+        return(p)
+    })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
+
+## 8.5. By district, Breed Type and Dogs's Gender
+
+In an effort to provide a more comprehensive analysis of dog populations within various districts, the latest R script has been enhanced to include not only total counts by district but also a detailed breakdown by breed type and gender. This enhancement aims to offer a deeper understanding of the diversity and demographics of canine populations across different regions.
+
+```{r shiny, total count of dogs by breedtype and dogs gender, echo=FALSE, message = FALSE, warning=FALSE}
+
+# Define UI for the application
+ui <- fluidPage(
+    titlePanel("Total Count of Dogs by District, Breed, and Gender"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedBreedType", "Select Breed Type:", choices = c("All", unique(new_df$BreedType))),
+            selectInput("selectedGender", "Select Gender:", choices = c("All", "Male" = "male", "Female" = "female")),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
+            helpText("Displays the total count of dogs by district, breed type, and gender for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("dogPlot")
+        )
+    )
+)
+
+# Define server logic
+server <- function(input, output) {
+    output$dogPlot <- renderPlot({
+        # Filter data based on the selected year
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
+        
+        # Convert DistrictSort to a factor with levels from 1 to 12
+        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
+
+        # Optionally include/exclude unknown breeds
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(BreedType != "Unknown")
+        }
+
+        # Filter by selected breed type if not 'All'
+        if (input$selectedBreedType != "All") {
+            filtered_data <- filtered_data %>%
+                filter(BreedType == input$selectedBreedType)
+        }
+
+        # Filter by selected gender if not 'All'
+        if (input$selectedGender != "All") {
+            filtered_data <- filtered_data %>%
+                filter(DogSex == input$selectedGender)
+        }
+
+        # Calculate total number of dogs per district
+        breed_data <- filtered_data %>%
+            group_by(DistrictSort, BreedType, DogSex) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            mutate(Position = as.numeric(DistrictSort) + ifelse(DogSex == "female", -0.2, 0.2))  # Position adjustment for clarity
+
+        # Generate the plot
+        p <- ggplot() +
+            geom_bar(data = breed_data, aes(x = DistrictSort, y = TotalDogs, fill = DistrictSort), stat = "identity") +
+            geom_point(data = breed_data, aes(x = Position, y = TotalDogs, color = DogSex, shape = BreedType), size = 3, position = position_jitterdodge(jitter.width = 0.1)) +
+            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
+            scale_fill_viridis_d(name = "District", guide = "none") +
+            scale_color_manual(values = c("female" = "pink", "male" = "blue")) +
+            scale_shape_manual(values = seq(1, 20)) +
+            scale_y_continuous(limits = c(0, 2000), breaks = seq(0, 2000, by = 500)) +
+            theme_minimal() +
+            labs(title = paste("Total Count of Dogs by District, Breed, and Gender in", input$selectedYear),
+                 subtitle = "Bar: Total Count | Points: Count by Breed and Gender",
+                 x = "District",
+                 y = "Total Count of Dogs") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+        return(p)
+    })
+}
+
+# Run the application
+shinyApp(ui = ui, server = server)
+
+```
+
+# 9. Top dog breeds
+
+
+## 9.1. Top dog breeds by year
+
+This Shiny application provides a clear and dynamic way to visualize the most popular dog breeds each year, allowing for the inclusion or exclusion of unknown breeds. The color-coding of breeds enhances readability and helps in quickly identifying trends.
+
+```{r shiny, top dog breeds by year, echo=FALSE, message=FALSE, warning=FALSE}
+
+# Function to assign colors to PrimaryBreed
+assign_colors <- function(data) {
+    n_breeds <- length(unique(data$PrimaryBreed))
+    palette <- scales::hue_pal()(n_breeds)
+    breed_color_map <- setNames(palette, unique(data$PrimaryBreed))
+    return(breed_color_map)
+}
+
+
+ui <- fluidPage(
+    titlePanel("Top dog breeds by year"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
+            helpText("Displays top dog breeds by year")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$breedPlot <- renderPlot({
+        # Filter data based on the selected year
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear))
+
+        # Optionally exclude unknown breeds
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(PrimaryBreed != "Unknown")
+        }
+
+        # Aggregate data by PrimaryBreed
+        breed_data <- filtered_data %>%
+            group_by(PrimaryBreed) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(desc(TotalDogs)) %>%
+            slice_max(order_by = TotalDogs, n = 10)
+
+        # Check if breed data is empty
+        if (nrow(breed_data) == 0) {
+            return(ggplot() +
+                   labs(title = "No data available for the selected year or criteria",
+                        x = "", y = "") +
+                   theme_minimal())
+        }
+
+        # Assign colors to PrimaryBreed
+        breed_color_map <- assign_colors(breed_data)
+
+        # Generate the plot
+        p <- ggplot(breed_data, aes(x = reorder(PrimaryBreed, TotalDogs), y = TotalDogs, fill = PrimaryBreed)) +
+            geom_col() +
+            scale_fill_manual(values = breed_color_map) +
+            geom_hline(yintercept = c(250, 500, 750, 1000), linetype = "dashed", color = "red") +
+            scale_y_continuous(limits = c(0, max(1250, max(breed_data$TotalDogs, na.rm = TRUE))), breaks = seq(0, max(750, max(breed_data$TotalDogs, na.rm = TRUE)), by = 250)) +
+            theme_minimal() +
+            labs(title = paste("Top 10 Primary Breeds", input$selectedYear),
+                 x = "Primary Breed", y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+        return(p)
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
+
+## 9.2. Top dog breeds by district
+
+This visualization enables users to explore the distribution of dog breeds across different districts for a selected year. It highlights the top 5 dog breeds in each district, allowing for a detailed understanding of breed trends and distribution patterns.
+
+```{r shiny, primary breeds by district, echo=FALSE, message=FALSE, warning=FALSE}
+  
+ui <- fluidPage(
+    titlePanel("Dog Breed Trends by District"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
+            helpText("Displays top dog breeds by district for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$breedPlot <- renderPlot({
+        # Filter data based on selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15")
+
+        # Optionally exclude unknown breeds based on checkbox input
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(PrimaryBreed != "Unknown")
+        }
+
+        # Ensure DistrictSort is a factor with levels correctly ordered
+        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
+
+        # Aggregate data
+        yearly_data <- filtered_data %>%
+            group_by(DistrictSort, PrimaryBreed) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(DistrictSort, desc(TotalDogs)) %>%
+            group_by(DistrictSort) %>%
+            top_n(5, wt = TotalDogs) %>%
+            ungroup()
+
+        # Assign colors to PrimaryBreed
+        breed_color_map <- assign_colors(yearly_data)
+
+        # Generate the plot
+        p <- ggplot(yearly_data, aes(x = DistrictSort, y = TotalDogs, fill = PrimaryBreed)) +
+            geom_col(position = "stack") +
+            scale_fill_manual(values = breed_color_map) +
+            geom_hline(yintercept = c(150, 300, 450, 600), linetype = "dashed", color = "red") +
+            scale_y_continuous(limits = c(0, max(600, max(yearly_data$TotalDogs))), breaks = seq(0, max(600, max(yearly_data$TotalDogs)), by = 300)) +
+            theme_minimal() +
+            labs(title = paste("Top 5 Primary Breeds by Total Count of Dogs in", input$selectedYear),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 90, hjust = 1))
+
+        return(p)
+    })
+}
+
+shinyApp(ui = ui, server = server)
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+```{r shiny, all primary breeds by district, echo=FALSE, message = FALSE, warning=FALSE}
+
+# Function to assign colors to PrimaryBreed
+assign_colors <- function(data) {
+    n_breeds <- length(unique(data$PrimaryBreed))
+    palette <- scales::hue_pal()(n_breeds)
+    breed_color_map <- setNames(palette, unique(data$PrimaryBreed))
+    return(breed_color_map)
+}
+
+# Define UI for the application
+ui <- fluidPage(
+    titlePanel("Top Dog Breeds by District"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedBreed", "Select Breed Type:", choices = NULL),  # Dynamically populated
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
+            helpText("Displays the total count of dogs by district and selected breed type for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+# Define server logic required to draw a plot
+server <- function(input, output, session) {
+    # Observe the selected year to update breed type options
+    observe({
+        year_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(PrimaryBreed), DistrictSort != "15") %>%
+            group_by(PrimaryBreed) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(desc(TotalDogs)) %>%
+            slice_max(order_by = TotalDogs, n = 10)
+
+        breed_choices <- c("All", year_data$PrimaryBreed)
+        updateSelectInput(session, "selectedBreed", choices = breed_choices, selected = breed_choices[1])
+    })
+
+    output$breedPlot <- renderPlot({
+        # Filter data based on the selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
+
+        # Optionally exclude unknown breeds based on checkbox input
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(PrimaryBreed != "Unknown")
+        }
+
+        # If 'All' is not selected for breed type, further filter by selected breed type
+        if (input$selectedBreed != "All") {
+            filtered_data <- filtered_data %>%
+                filter(PrimaryBreed == input$selectedBreed)
+        }
+        
+        # Ensure DistrictSort is a factor with levels correctly ordered
+        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
+
+        # Aggregate data by district and breed type
+        aggregated_data <- filtered_data %>%
+            group_by(DistrictSort, PrimaryBreed) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(DistrictSort, desc(TotalDogs)) %>%
+            group_by(DistrictSort) %>%
+            top_n(5, wt = TotalDogs) %>%
+            ungroup()
+
+        # Assign colors to PrimaryBreed
+        breed_color_map <- assign_colors(aggregated_data)
+
+        # Generate the plot
+        p <- ggplot(aggregated_data, aes(x = DistrictSort, y = TotalDogs, fill = PrimaryBreed)) +
+            geom_col(position = "stack") +
+            scale_fill_manual(values = breed_color_map) +
+            geom_hline(yintercept = c(100, 250, 500), linetype = "dashed", color = "red") +
+            scale_y_continuous(limits = c(0, max(500, max(aggregated_data$TotalDogs))), breaks = seq(0, 500, by = 100)) +
+            theme_minimal() +
+            labs(title = paste("Top Breeds by Total Count of Dogs in", input$selectedYear),
+                 x = "District",
+                 y = "Total Number of Dogs") +
+            theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+        return(p)
+    })
+}
+
+# Run the application 
+shinyApp(ui = ui, server = server)
+
+```
+
+```{r shiny, treemap, primary breeds by district, echo=FALSE, message = FALSE, warning=FALSE}
+
+ui <- fluidPage(
+    titlePanel("Dog Breed Trends by District"),
+    sidebarLayout(
+        sidebarPanel(
+            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
+            helpText("Displays top dog breeds by district for the selected year.")
+        ),
+        mainPanel(
+            plotOutput("breedPlot")
+        )
+    )
+)
+
+server <- function(input, output) {
+    output$breedPlot <- renderPlot({
+        # Filter data based on selected year and exclude District 15
+        filtered_data <- new_df %>%
+            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15")
+
+        # Optionally exclude unknown breeds based on checkbox input
+        if (!input$includeUnknown) {
+            filtered_data <- filtered_data %>%
+                filter(PrimaryBreed != "Unknown")
+        }
+
+        # Aggregate data
+        yearly_data <- filtered_data %>%
+            group_by(DistrictSort, PrimaryBreed) %>%
+            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+            arrange(DistrictSort, desc(TotalDogs)) %>%
+            group_by(DistrictSort) %>%
+            top_n(5, wt = TotalDogs) %>%
+            ungroup()
+
+        # Plotting the treemap
+        treemap(yearly_data,
+                index = c("DistrictSort", "PrimaryBreed"),
+                vSize = "TotalDogs",
+                vColor = "TotalDogs",
+                title = paste("Top 5 Primary Breeds by Total Count of Dogs in", input$selectedYear),
+                palette = "Spectral")
+    })
+}
+
+shinyApp(ui = ui, server = server)
+
+```
