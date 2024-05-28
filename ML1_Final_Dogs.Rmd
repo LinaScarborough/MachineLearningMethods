@@ -1401,17 +1401,7 @@ colnames(cm_binary_df) <- c("Prediction", "Reference", "Freq")
 
 ```
 
-
-```{r neuralnetwork_plots, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE, fig.align='center'}
-
-# Confusion matrix plot
-ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
-  geom_tile() +
-  scale_fill_gradient(low = "mistyrose", high = "darksalmon") +
-  geom_text(aes(label = Freq), vjust = 1) +
-  theme_minimal() +
-  labs(title = "Binary Confusion Matrix", x = "True", y = "Predicted") +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+``` {r neuralnetwork_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE, fig.align='center'}
 
 #### PLOTTING THE MODEL ####
 
@@ -1421,6 +1411,24 @@ final_model <- breed_net$finalModel
 plot(final_model)
 
 ```
+
+After running the code, the final model is a neural network with 16 input nodes, 15 hidden nodes, and 1 output node, totalling 271 weights. However, an evaluation of the confusion matrix and ROC curves indicates insufficient evidence to support the model's validity for the given variables. This issue might stem from the selection of variables; expanding the set to include more variables from the dataset might improve the model. Alternatively, it could be that an artificial neural network is not the most suitable model for addressing this particular research question.
+
+```{r neuralnetwork_conf_plot, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE, fig.align='center'}
+
+# Confusion matrix plot
+net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
+    geom_tile() +
+    scale_fill_gradient(low = "mistyrose", high = "darksalmon") +
+    geom_text(aes(label = Freq), vjust = 1) +
+    theme_minimal() +
+    labs(title = "Binary Confusion Matrix", x = "True", y = "Predicted") +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(net_ggplot)
+
+```
+After building the model with an 80% training subset of the total dataset, we use it to predict values for the remaining 20%. We evaluate the model's performance using a confusion matrix, which allowe us to compare our predicted values with the actual values of the test subset. The model successfully classifies 10,098 dogs as pure-bred, with only 44 being misclassified. However, this good result is overshadowed by the misclassification of 4,020 mixed-breed dogs, with only 31 correct predictions. This suggests that the model wrongly tends to classify most dogs as pure-bred.
 
 ```{r neuralnetwork_quality, include=FALSE, cache=TRUE}
 
@@ -1443,9 +1451,9 @@ pred <- ROCR::prediction(pred_numeric,
 
 ```
 
-After running the code, the final model is a neural network with 16 input nodes, 15 hidden nodes, and 1 output node, totalling 271 weights. However, an evaluation of the confusion matrix and ROC curves indicates insufficient evidence to support the model's validity for the given variables. This issue might stem from the selection of variables; expanding the set to include more variables from the dataset might improve the model. Alternatively, it could be that an artificial neural network is not the most suitable model for addressing this particular research question.
 
-```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, cache=TRUE}
+
+```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
 plot(perf, lwd=2, col="darksalmon")
