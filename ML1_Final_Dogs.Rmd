@@ -1247,6 +1247,87 @@ summary(lm.counts.year)
 
 ### 3.2. Generalized Linear Model (Poisson)
 
+We set out to answer the following goal: _Identifying Popular Breeds_.
+
+The model can accurately predict the popularity of different dog breeds based on age and sex.
+
+Pet Paradise can use the model predictions to optimize inventory management by stocking up on products that are likely to be in higher demand based on the popularity of different breeds. For example, if certain breeds are more popular among senior dog owners, Pet Paradise can introduce specialized products such as senior dog food or joint supplements targeted towards that demographic.
+
+``` {r glm_part01, include=FALSE, echo=TRUE}
+
+# Create a new dataframe with the selected variables
+df_subset <- df_EN[, c("PrimaryBreed", "DogAgeGroupCd", "DogSexCd")]
+
+# Clean NAs
+missing_values <- colSums(is.na(df_subset))
+print(missing_values) # no missing values :)
+
+# Summary of DogAgeGroupCd
+summary(df_subset$DogAgeGroupCd)
+# Output shows max value 999 -> nonsensical. It refers to meaning "age unknown". So we replace it with the average age.
+mean_dog_age <- mean(df_subset$DogAgeGroupCd[df_subset$DogAgeGroupCd != 999], na.rm = TRUE)
+df_subset <- df_subset %>%
+  mutate(DogAgeGroupCd = ifelse(DogAgeGroupCd == 999, mean_dog_age, DogAgeGroupCd))
+summary(df_subset$DogAgeGroupCd) # Now output makes much more sense.
+#  Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#0.000   2.000   5.000   5.887   9.000  23.000
+
+# Distributions
+table(df_subset$DogSexCd)
+# The distribution of dog sexes shows there are 35,409 female dogs (coded 2) and 35,558 male dogs (coded 1).
+# There's no significant skew towards one sex in the dataset.
+
+# Favourite 5 breeds
+breed_counts <- table(df_subset$PrimaryBreed)
+sorted_breeds <- sort(breed_counts, decreasing = TRUE)
+top_5_breeds <- head(sorted_breeds, 5)
+top_5_breeds
+
+```
+
+| Top Breeds         | Unknown   | Chihuahua | Labrador Retriever | Yorkshire Terrier | Jack Russel Terrier |
+|--------------------|-----------|-----------|--------------------|-------------------|---------------------|
+| Number of Dogs     | 9095      | 4828      | 4198               | 2709              | 2579                |
+
+So Pet Paradise must offer mixed breed foods and products. Not only purebred product offerings.
+
+``` {r glm_part02}
+
+df_EN_subset <- df_EN
+df_EN_subset$DogSexCd <- ifelse(df_EN_subset$DogSexCd == "Female", 1, 0)
+
+# Fit the binomial logistic regression model
+binomial_model <- glm(DogSexCd ~ DogAgeGroupCd, family = binomial, data = df_EN_subset)
+
+# Summary of the model
+summary(binomial_model)
+
+# Odds ratios
+exp_coef <- exp(coef(binomial_model))
+print(exp_coef)
+
+# Percentage change in odds
+percentage_change <- (exp_coef - 1) * 100
+
+# Interpretation of the coefficients
+print("Interpretation of Coefficients:")
+print(paste("For every increase in dog age group, the odds of being female increase by",
+            round(percentage_change["DogAgeGroupCd"], 2), "%"))
+
+
+```
+
+Older dogs are more likely to be female, if all other variables are equal. Pet Paradise could tailor it's pet care,
+such as tailoring products or services to the specific needs of aging female dogs. But, the increase is negligible, at 0.35%.
+
+So instead, another sales approach. Let's say, Pet Paradise is trying to target specific age groups for marketing or sales purposes.
+Pet Paradise wants to predict the likelihood of a pet owner in their 40s owning a top 5 breed (e.g., the Chihuahua)
+compared to owning an unknown breed. For this, a binomial logistic regression makes most sense to use.
+This is because the response variable is binary: either a pet owner owns a Chihuahua (let say, coded as 1)
+or they own an unknown breed (we will code this as 0).
+
+
+
 ---
 
 ### 3.3. Generalized Linear Model (Binomial)
