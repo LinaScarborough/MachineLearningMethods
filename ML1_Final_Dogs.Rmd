@@ -351,15 +351,14 @@ p <- ggplot(unique_owner_counts, aes(x = KeyDateYear, y = UniqueOwnerCount, grou
   geom_point(size = 3) +  # Add points
   geom_hline(yintercept = c(100, 500, 1000, 1500, 2000), linetype = "dashed", color = "red") +
   theme_minimal() +
-  labs(title = "Unique Owner IDs by Age Group Over Years",
-       x = "Year",
+  labs(x = "Year",
        y = "Count of Unique Owner IDs") +
   scale_color_brewer(palette = "Paired") +  # Use color to differentiate lines
   scale_y_continuous(limits = c(0, 2500), breaks = seq(0, 2500, by = 500)) +
   scale_x_continuous(breaks = seq(min(unique_owner_counts$KeyDateYear), max(unique_owner_counts$KeyDateYear), by = 1))  # Define breaks in the x-axis scale to show each year
 
 # Print the plot
-print(p)
+ggplotly(p)
 
 ```
 
@@ -1072,7 +1071,6 @@ assign_colors <- function(data) {
 
 # Define UI for the application
 ui <- fluidPage(
-    titlePanel("Top Dog Breeds by District"),
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
@@ -1157,7 +1155,6 @@ shinyApp(ui = ui, server = server)
 ```{r shiny, treemap, primary breeds by district, echo=FALSE, message = FALSE, warning=FALSE}
 
 ui <- fluidPage(
-    titlePanel("Dog Breed Trends by District"),
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
@@ -1207,13 +1204,15 @@ shinyApp(ui = ui, server = server)
 
 ---
 
----
-
 ## 3. Models
 
 ### 3.1. Linear Model: dog age by breed status
 
 For the first chapter in the machine learning models we begin with a linear model that will test the effect of a categorical variable. To do this we set ourselves the following question: _does the breed status have an effect on the age at which dogs are registered?_
+
+Understanding typical registration ages for different breeds will allow Pet Paradise to target marketing effectively, reaching owners at the right stage of their pet ownership journey. Additionally, these insights can inform strategic inventory management, anticipating demand for breed-specific products and offering tailored advice to enhance customer satisfaction.
+
+In the context of the question at hand, it is worth noting that linear models will not be employed to generate predictions from the provided data. Rather, they will be utilized to determine whether there is a linear correlation between the various states of categorical variables (such as pedigree dog, non-pedigree, etc.) and the response variable, which denotes the age of the dog.
 
 ```{r linearmodel_01, include=FALSE}
 
@@ -1246,7 +1245,7 @@ ggplotly(boxplots_ggplot)
 
 ```
 
-Based on the boxplots above, there does seem to be a difference in dog ages based on their breed status. Interestingly, the most high outliers are associated with pedigree dogs. We will continue by defining a linear model.
+Based on the boxplots above, there does seem to be a difference in dog ages based on their breed status. Interestingly, the most extreme outliers are associated with pedigree dogs. We will continue by defining a linear model.
 
 ```{r linearmodel_lm01, echo=TRUE}
 
@@ -1255,7 +1254,7 @@ summary(lm.dogs.1)
 
 ```
 
-The intercept refers to the pure breed dogs, while the following predictors represent the differences between themselves and the intercept. The summary of the linear model suggests there is strong evidence that the mean age of pedigree dogs is not equal to 0 at hte time of registration, with a value of 5.7 years, while the other three breed categories' ages differ significantly from that of pedigree dogs. The most noticeable difference is between pedigree dogs and those whose secondary breed is unknown, with the latter being 1.79 years older.
+The intercept refers to the pure breed dogs, while the following predictors represent the differences between themselves and the intercept. The summary of the linear model suggests there is strong evidence that the mean age of pedigree dogs is not equal to 0 at the time of registration, with a value of 5.7 years, while the other three breed categories' ages differ significantly from that of pedigree dogs. The most noticeable difference is between pedigree dogs and those whose secondary breed is unknown, with the latter being 1.79 years older.
 
 We follow up this insight by assessing the differences between each of them. 
 
@@ -1293,13 +1292,16 @@ summary(glth.test.1)
 
 ```
 
-```{r linearmodel_glth_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE}
+```{r linearmodel_glth_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=10, fig.height=4, cache=TRUE}
 
-plot(glth.test.1)
+par(mar = c(5, 30, 5, 5) + 0.1)  # c(bottom, left, top, right) + 0.1
+plot(glth.test.1,
+     main = "Tukey Honest Significant Difference Test",
+     sub = "95% family-wise confidence level")
 
 ```
 
-
+In the above _Tukey Honest Significant Difference Test_ the similarity between means of different pairs is shown based on how different they are, with closeness to 0 representing no difference in their means. This, along with the 95% confidence intervals, provides an illustrative insight into pairwise variations.
 
 ---
 
@@ -1379,7 +1381,7 @@ print(paste("For every increase in dog age group, the odds of being female incre
 
 ```
 
-Older dogs are more likely to be female, if all other variables are equal. Pet Paradise could tailor it's pet care,
+Older dogs are more likely to be female, if all other variables are equal. Pet Paradise could tailor its pet care,
 such as tailoring products or services to the specific needs of aging female dogs. But, the increase is negligible, at 0.35%.
 
 So instead, another sales approach. Let's say, Pet Paradise is trying to target specific age groups for marketing or sales purposes.
@@ -1559,7 +1561,7 @@ net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fil
     scale_fill_gradient(low = "mistyrose", high = "darksalmon") +
     geom_text(aes(label = Freq), vjust = 1) +
     theme_minimal() +
-    labs(title = "Binary Confusion Matrix", x = "True", y = "Predicted") +
+    labs(title = "Binary Confusion Matrix", x = "Reference", y = "Predicted") +
     theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 ggplotly(net_ggplot)
@@ -1593,7 +1595,7 @@ pred <- ROCR::prediction(pred_numeric,
 ```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
-plot(perf, lwd=2, col="darksalmon")
+plot(perf, lwd=2, col="darksalmon", main = "ROC Curve")
 abline(a=0, b=1)
 
 ```
