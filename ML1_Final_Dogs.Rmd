@@ -125,64 +125,70 @@ df <- read.csv("Datasets/kul100od1001.csv")
 
 For the English version, translations for the column names are defined and a function is employed to replace multiple patterns at once for content translation. This includes translations for age groups, sexes, breed types, and dog colors. After applying the translation function across all relevant columns, dog colors are also translated. From this point forward, we will refer to variables and items exclusively by their translated English names.
 
-```{r translation, include=FALSE, cache=TRUE}
+```{r translation, include=FALSE}
 
-# Duplicate and rename df for English version
-df_EN <- df
-
-# Define translations for column names in English
-colnames(df_EN) <- c("KeyDateYear", "DataStatusCd", "OwnerId", "OwnerAgeGroupCd", "OwnerAgeGroup", "OwnerAgeGroupSort", "OwnerSexCd", "OwnerSex", "OwnerSexSort", "DistrictCd", "District", "DistrictSort", "QuarCd", "Quar", "QuarSort", "PrimaryBreed", "SecondaryBreed", "MixedBreedCd", "MixedBreed", "MixedBreedSort", "BreedTypeCd", "BreedType", "BreedTypeSort", "DogBirthYear", "DogAgeGroupCd", "DogAgeGroup", "DogAgeGroupSort", "DogSexCd", "DogSex", "DogSexSort", "DogColor", "NumberOfDogs")
-
-# Define a function to replace multiple patterns at once
-replace_patterns <- function(text, patterns, replacements) {
-  for (i in seq_along(patterns)) {
-    text <- str_replace_all(text, patterns[i], replacements[i])
+# Check if "Datasets/df_EN.csv" exists
+if (!file.exists("Datasets/df_EN.csv")) {
+  # Duplicate and rename df for English version
+  df_EN <- df
+  
+  # Define translations for column names in English
+  colnames(df_EN) <- c("KeyDateYear", "DataStatusCd", "OwnerId", "OwnerAgeGroupCd", "OwnerAgeGroup", "OwnerAgeGroupSort", "OwnerSexCd", "OwnerSex", "OwnerSexSort", "DistrictCd", "District", "DistrictSort", "QuarCd", "Quar", "QuarSort", "PrimaryBreed", "SecondaryBreed", "MixedBreedCd", "MixedBreed", "MixedBreedSort", "BreedTypeCd", "BreedType", "BreedTypeSort", "DogBirthYear", "DogAgeGroupCd", "DogAgeGroup", "DogAgeGroupSort", "DogSexCd", "DogSex", "DogSexSort", "DogColor", "NumberOfDogs")
+  
+  # Define a function to replace multiple patterns at once
+  replace_patterns <- function(text, patterns, replacements) {
+    for (i in seq_along(patterns)) {
+      text <- str_replace_all(text, patterns[i], replacements[i])
+    }
+    return(text)
   }
-  return(text)
+  
+  # Define patterns and replacements for content translation
+  patterns <- c("- bis ", "-Jährige", "männlich", "weiblich", "Keine", "Unbekannt", "Rassehund", "Mischling, beide Rassen bekannt", "Mischling, sekundäre Rasse unbekannt", "Mischling, beide Rassen unbekannt", "Kleinwüchsig", "Rassentypenliste I", "Rassentypenliste II")
+  replacements <- c(" to ", " years old", "male", "female", "none", "Unknown", "Pedigree dog", "Mixed breed, both breeds known", "Mixed breed, secondary breed unknown", "Mixed breed, both breeds unknown", "Small stature", "Breed type list I", "Breed type list II")
+  
+  # Apply the function across all columns
+  df_EN[] <- lapply(df_EN, function(x) replace_patterns(x, patterns, replacements))
+  
+  # Color translation - can be further customized based on your dataset
+  color_patterns <- c("schwarz", "braun", "weiss", "grau", "silber", "rot", "gelb", "hell", "dunkel", "gestromt", "schimmel", "zweifarbig", "dreifarbig", "vierfarbig", "gemischt", "meliert", "hirschrot mit Maske", "löwenfarbig")
+  color_replacements <- c("black", "brown", "white", "gray", "silver", "red", "yellow", "light", "dark", "brindle", "mold", "2 colors", "3 colors", "4 colors", "mixed", "mottled", "stag red with mask", "lion-colored")
+  
+  # Translate dog colors
+  df_EN$DogColor <- replace_patterns(df_EN$DogColor, color_patterns, color_replacements)
+  
+  write.csv(df_EN, "Datasets/df_EN.csv", row.names = FALSE)
+  
+} else {
+  print("English version already saved")
 }
-
-# Define patterns and replacements for content translation
-patterns <- c("- bis ", "-Jährige", "männlich", "weiblich", "Keine", "Unbekannt", "Rassehund", "Mischling, beide Rassen bekannt", "Mischling, sekundäre Rasse unbekannt", "Mischling, beide Rassen unbekannt", "Kleinwüchsig", "Rassentypenliste I", "Rassentypenliste II")
-replacements <- c(" to ", " years old", "male", "female", "none", "Unknown", "Pedigree dog", "Mixed breed, both breeds known", "Mixed breed, secondary breed unknown", "Mixed breed, both breeds unknown", "Small stature", "Breed type list I", "Breed type list II")
-
-# Apply the function across all columns
-df_EN[] <- lapply(df_EN, function(x) replace_patterns(x, patterns, replacements))
-
-# Color translation - can be further customized based on your dataset
-color_patterns <- c("schwarz", "braun", "weiss", "grau", "silber", "rot", "gelb", "hell", "dunkel", "gestromt", "schimmel", "zweifarbig", "dreifarbig", "vierfarbig", "gemischt", "meliert", "hirschrot mit Maske", "löwenfarbig")
-color_replacements <- c("black", "brown", "white", "gray", "silver", "red", "yellow", "light", "dark", "brindle", "mold", "2 colors", "3 colors", "4 colors", "mixed", "mottled", "stag red with mask", "lion-colored")
-
-# Translate dog colors
-df_EN$DogColor <- replace_patterns(df_EN$DogColor, color_patterns, color_replacements)
-
-# Optional: Print unique values to check the translations
-print(unique(df_EN$MixedBreed))
-print(unique(df_EN$BreedType))
-print(unique(df_EN$DogColor))
-
-write.csv(df_EN, "df_EN.csv", row.names = FALSE)
 
 ```
 
 The next step involves identifying and marking the initial occurrence of each `OwnerId` as unique within the dataset. This distinction facilitates further analyses that may require the identification of distinct entries.
 
-```{r df_unique_OwnerId, include=FALSE, cache=TRUE}
+```{r df_unique_OwnerId, include=FALSE}
+
+# Clean import of dataset
+df_EN <- read.csv("Datasets/df_EN.csv")
 
 df_EN$unique_OwnerId <- !duplicated(df_EN$OwnerId)
 head(df_EN)
 
 ```
 
-Finally, a subset of relevant columns is extracted from the comprehensive dataset, creating a streamlined DataFrame named `new_df`. The subset includes essential fields such as `KeyDateYear`, `OwnerId`, and details regarding the dogs, including `PrimaryBreed` and `DogBirthYear`. Additionally, the `NumberOfDogs` column is converted from its original format to a numeric type, ensuring that subsequent data analysis can utilize numerical operations.
+Finally, a subset of relevant columns is extracted from the comprehensive dataset, creating a streamlined dataframe named `df_EN_EDA`. The subset includes essential fields such as `KeyDateYear`, `OwnerId`, and details regarding the dogs, including `PrimaryBreed` and `DogBirthYear`. Additionally, the `NumberOfDogs` column is converted from its original format to a numeric type, ensuring that subsequent data analysis can utilize numerical operations.
 
-```{r new_df, include=FALSE, cache=TRUE}
+```{r df_EN_EDA, include=FALSE}
 
-# Create a new DataFrame with selected columns and convert 'NumberOfDogs' to numeric
-new_df <- df_EN %>%
+df_EN_EDA <- df_EN %>%
   select(KeyDateYear, OwnerId, OwnerAgeGroup, OwnerSex, DistrictSort, QuarCd, PrimaryBreed, SecondaryBreed, MixedBreed, BreedType, DogBirthYear, DogAgeGroupCd, DogSex, NumberOfDogs, unique_OwnerId) %>%
-  mutate(NumberOfDogs = as.numeric(as.character(NumberOfDogs)))
+  mutate(NumberOfDogs = as.numeric(as.character(NumberOfDogs))) %>% # Convert NumberOfDogs to numeric
+  mutate(across(where(is.character), factor)) %>%
+  mutate_at(vars(KeyDateYear, DistrictSort, QuarCd), factor)
 
-head(new_df, 5)
+str(df_EN_EDA)
+head(df_EN_EDA, 5)
 
 ```
 
@@ -200,7 +206,7 @@ As can be seen in the structure of the data, the set comprises several observati
 
 **Numerical values**:
 
-  - `ReferenceYear`: numerical value for the reference year
+  - `KeyDateYear`: numerical value for the reference year
   - `OwnerId`: numerical identifier for the owner of the registered dog
   - `AgeV10Sort`: referring to the owner's age as a 10-year category
   - `DogBirthYear`: numerical value for the birth year of the dog
@@ -227,7 +233,7 @@ As can be seen in the structure of the data, the set comprises several observati
 ### 2.2.1. Analyzing Diversity in Dataset Features: Years, Owner IDs, and Age Groups
 
 This series of R code snippets delves into the examination of key
-features within the `new_df` dataframe, focusing on the identification and
+features within the `df_EN_EDA` dataframe, focusing on the identification and
 analysis of unique entries for `KeyDateYear`, `OwnerId`, and `OwnerAgeGroup`.
 Each code section is designed to extract unique values, count these
 entries, and where applicable, visualize the distribution. Such analysis
@@ -238,7 +244,7 @@ uniqueness, and demographic variations among owners.
 ```{r unique_years, include=TRUE}
 
 # Extract and count unique years
-unique_years <- unique(new_df$KeyDateYear)
+unique_years <- unique(df_EN_EDA$KeyDateYear)
 number_of_unique_years <- length(unique_years)
 print(number_of_unique_years)
 print(unique_years)
@@ -248,7 +254,7 @@ print(unique_years)
 ```{r unique_OwnerId, include=TRUE}
 
 # Extract and count unique Owner IDs
-unique_Owner <- unique(new_df$OwnerId)
+unique_Owner <- unique(df_EN_EDA$OwnerId)
 number_of_unique_Owner <- length(unique_Owner)
 print(number_of_unique_Owner)
 
@@ -265,7 +271,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(new_df$KeyDateYear)),
+                        choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedGender", "Select Gender:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
             helpText("Displays unique owner IDs by age group and selected gender for the chosen year.")
@@ -282,12 +288,12 @@ server <- function(input, output) {
         # Aggregate unique Owner IDs by Age Group, Year, and Gender
         if (input$selectedGender == "all") {
             # Sum across both genders
-            unique_owner_counts_gender <- new_df %>%
+            unique_owner_counts_gender <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop')
         } else {
             # Filter for a specific gender
-            unique_owner_counts_gender <- new_df %>%
+            unique_owner_counts_gender <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop') %>%
                 filter(OwnerSex == input$selectedGender)
@@ -295,7 +301,7 @@ server <- function(input, output) {
 
         # Adjust factor levels
         unique_owner_counts_gender$OwnerAgeGroup <- factor(unique_owner_counts_gender$OwnerAgeGroup,
-                                                           levels = unique(new_df$OwnerAgeGroup[order(new_df$OwnerAgeGroup)]))
+                                                           levels = unique(df_EN_EDA$OwnerAgeGroup[order(df_EN_EDA$OwnerAgeGroup)]))
 
         # Filter data for the specific year
         data_for_year_gender <- filter(unique_owner_counts_gender, KeyDateYear == as.numeric(input$selectedYear))
@@ -329,7 +335,7 @@ The following visualization shows the count of unique Owner IDs across different
 ```{r cs seasonal trend of Age Group, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Aggregate unique Owner IDs by Age Group and Year
-unique_owner_counts <- new_df %>%
+unique_owner_counts <- df_EN_EDA %>%
   group_by(KeyDateYear, OwnerAgeGroup) %>%
   summarise(UniqueOwnerCount = n_distinct(OwnerId), .groups = 'drop')
 
@@ -366,17 +372,17 @@ Furthermore, to understand the trend in dog population over time, we calculated 
 ```{r shiny, yearly dog counts, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Convert NumberOfDogs to numeric
-new_df <- new_df %>% 
+df_EN_EDA <- df_EN_EDA %>% 
   mutate(NumberOfDogs = as.numeric(NumberOfDogs))
 
 # Check for any conversion problems
-sum(is.na(new_df$NumberOfDogs))
+sum(is.na(df_EN_EDA$NumberOfDogs))
 
 # Convert KeyDateYear to numeric
-new_df$KeyDateYear <- as.numeric(as.character(new_df$KeyDateYear))
+df_EN_EDA$KeyDateYear <- as.numeric(as.character(df_EN_EDA$KeyDateYear))
 
 # Aggregate data to get total number of dogs per year
-yearly_dog_counts <- new_df %>%
+yearly_dog_counts <- df_EN_EDA %>%
   group_by(KeyDateYear) %>%
   summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop')
 
@@ -470,7 +476,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(new_df$KeyDateYear)),
+                        choices = unique(df_EN_EDA$KeyDateYear)),
             helpText("Displays a heatmap of unique owner counts by age group and gender for the selected year.")
         ),
         mainPanel(
@@ -481,20 +487,21 @@ ui <- fluidPage(
 
 server <- function(input, output) {
     output$ownerHeatmap <- renderPlot({
+        # Filter data for the specific year selected by user
+        df_subset <- df_EN_EDA[df_EN_EDA$KeyDateYear == as.numeric(input$selectedYear), ]
+
         # Prepare the data
-        owner_counts <- new_df %>%
-          select(KeyDateYear, OwnerAgeGroup, OwnerSex, OwnerId) %>%
+        owner_counts <- df_subset %>%
           distinct(KeyDateYear, OwnerAgeGroup, OwnerSex, OwnerId) %>%
-          group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
+          group_by(OwnerAgeGroup, OwnerSex) %>%
           summarize(UniqueOwners = n(), .groups = 'drop')
 
-        # Filter data for the specific year selected by user
-        yearly_data <- filter(owner_counts, KeyDateYear == as.numeric(input$selectedYear))
-
         # Create the heatmap
-        p <- ggplot(yearly_data, aes(x = OwnerSex, y = OwnerAgeGroup, fill = UniqueOwners)) +
+        p <- ggplot(owner_counts, aes(x = OwnerSex, y = OwnerAgeGroup, fill = UniqueOwners)) +
             geom_tile() +
-            scale_fill_gradientn(colors = brewer.pal(11, "Spectral"), limits = c(0, max(yearly_data$UniqueOwners, na.rm = TRUE)), name = "Total Owners") +
+            scale_fill_gradientn(colors = brewer.pal(11, "Spectral"), 
+                                  limits = c(0, max(owner_counts$UniqueOwners, na.rm = TRUE)), 
+                                  name = "Total Owners") +
             theme_minimal() +
             labs(title = paste("Heatmap of Unique Owners by Gender and Age Group in", input$selectedYear),
                  x = "Owner's Gender",
@@ -523,7 +530,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(new_df$KeyDateYear)),
+                        choices = unique(df_EN_EDA$KeyDateYear)),
             helpText("Displays the total count of dogs by district for the selected year.")
         ),
         mainPanel(
@@ -535,7 +542,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$dogPlot <- renderPlot({
         # Filter and aggregate data based on the selected year, excluding District 15
-        yearly_data <- new_df %>%
+        yearly_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(DistrictSort), DistrictSort != "15") %>%
             group_by(DistrictSort) %>%
             summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
@@ -573,7 +580,7 @@ ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(new_df$KeyDateYear)),
+                        choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedGender", "Select Gender:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
             helpText("Displays the total count of dogs by district and gender for the selected year, ordered by total count.")
@@ -587,7 +594,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$dogPlot <- renderPlot({
         # Filter data based on the selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), 
                    !is.na(DistrictSort), 
                    DistrictSort != "15")  # Exclude District 15
@@ -636,7 +643,7 @@ This Shiny application provides an interactive visualization of the total count 
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedGender", "Select Owner's gender:", choices = c("Male" = "male", "Female" = "female")),
             helpText("Displays the total count of dogs by district and gender for the selected year.")
         ),
@@ -649,7 +656,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$dogPlot <- renderPlot({
         # Filter data based on the selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(DistrictSort), DistrictSort != "")
 
         # If 'All' is not selected, further filter by gender
@@ -698,9 +705,9 @@ To deepen the analysis of dog populations across different districts annually, t
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedBreedType", "Select Breed Type:", 
-                        choices = c("All" = "All", unique(new_df$BreedType))),
+                        choices = c("All" = "All", unique(df_EN_EDA$BreedType))),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
             helpText("Displays the total count of dogs by district and selected breed type for the selected year, excluding District 15.")
         ),
@@ -714,7 +721,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$breedPlot <- renderPlot({
         # Filter data based on the selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
         
         # Convert DistrictSort to a factor with levels from 1 to 12
@@ -769,7 +776,7 @@ shinyApp(ui = ui, server = server)
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
             helpText("Displays the total count of dogs by district and breed type for the selected year.")
         ),
@@ -783,7 +790,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$breedPlot <- renderPlot({
         # Filter data based on the selected year and handle unknown breed types
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
         
         # Convert DistrictSort to a factor with levels from 1 to 12
@@ -836,8 +843,8 @@ In an effort to provide a more comprehensive analysis of dog populations within 
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
-            selectInput("selectedBreedType", "Select Breed Type:", choices = c("All", unique(new_df$BreedType))),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
+            selectInput("selectedBreedType", "Select Breed Type:", choices = c("All", unique(df_EN_EDA$BreedType))),
             selectInput("selectedGender", "Select Gender:", choices = c("All", "Male" = "male", "Female" = "female")),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
             helpText("Displays the total count of dogs by district, breed type, and gender for the selected year.")
@@ -852,7 +859,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$dogPlot <- renderPlot({
         # Filter data based on the selected year
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
         
         # Convert DistrictSort to a factor with levels from 1 to 12
@@ -929,7 +936,7 @@ assign_colors <- function(data) {
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
             helpText("Displays top dog breeds by year")
         ),
@@ -942,7 +949,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$breedPlot <- renderPlot({
         # Filter data based on the selected year
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear))
 
         # Optionally exclude unknown breeds
@@ -997,7 +1004,7 @@ This visualization enables users to explore the distribution of dog breeds acros
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
             helpText("Displays top dog breeds by district for the selected year.")
         ),
@@ -1010,7 +1017,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$breedPlot <- renderPlot({
         # Filter data based on selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15")
 
         # Optionally exclude unknown breeds based on checkbox input
@@ -1068,7 +1075,7 @@ ui <- fluidPage(
     titlePanel("Top Dog Breeds by District"),
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedBreed", "Select Breed Type:", choices = NULL),  # Dynamically populated
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
             helpText("Displays the total count of dogs by district and selected breed type for the selected year.")
@@ -1083,7 +1090,7 @@ ui <- fluidPage(
 server <- function(input, output, session) {
     # Observe the selected year to update breed type options
     observe({
-        year_data <- new_df %>%
+        year_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(PrimaryBreed), DistrictSort != "15") %>%
             group_by(PrimaryBreed) %>%
             summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
@@ -1096,7 +1103,7 @@ server <- function(input, output, session) {
 
     output$breedPlot <- renderPlot({
         # Filter data based on the selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
 
         # Optionally exclude unknown breeds based on checkbox input
@@ -1153,7 +1160,7 @@ ui <- fluidPage(
     titlePanel("Dog Breed Trends by District"),
     sidebarLayout(
         sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(new_df$KeyDateYear)),
+            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = TRUE),
             helpText("Displays top dog breeds by district for the selected year.")
         ),
@@ -1166,7 +1173,7 @@ ui <- fluidPage(
 server <- function(input, output) {
     output$breedPlot <- renderPlot({
         # Filter data based on selected year and exclude District 15
-        filtered_data <- new_df %>%
+        filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15")
 
         # Optionally exclude unknown breeds based on checkbox input
@@ -1204,48 +1211,103 @@ shinyApp(ui = ui, server = server)
 
 ## 3. Models
 
-### 3.1. Linear Model: dog count by district over time
+### 3.1. Linear Model: dog age by breed status
 
-```{r linearmodel, include=FALSE}
+For the first chapter in the machine learning models we begin with a linear model that will test the effect of a categorical variable. To do this we set ourselves the following question: _does the breed status have an effect on the age at which dogs are registered?_
 
-dog_count_per_neighborhood_year <- df_EN %>%
-  group_by(District, KeyDateYear) %>%
-  summarize(DogCount = n())
+```{r linearmodel_01, include=FALSE}
 
-fit01_ggplot <- ggplot(dog_count_per_neighborhood_year, 
-                       aes(x = as.numeric(KeyDateYear), 
-                           y = DogCount, 
-                           color = District)) +
-   geom_point() +
-   geom_smooth(method = "lm", se = FALSE) +
-   labs(title = "Dog registrations by neighborhood - Linear Model",
-        x = "",
-        y = "",
-        color = "District") +
-   theme_minimal() +
-   scale_x_continuous(breaks = unique(as.numeric(dog_count_per_neighborhood_year$KeyDateYear)))
+# Clean import of dataset
+df_EN <- read.csv("Datasets/df_EN.csv")
 
+# Removing outliers
+df_EN_cleaned <- subset(df_EN, DogAgeGroupSort < 100)
+# Setting MixedBreed to factor
+df_EN_cleaned$MixedBreed <- factor(df_EN_cleaned$MixedBreed)
+# Setting reference to pure breeds
+df_EN_cleaned$MixedBreed <- relevel(df_EN_cleaned$MixedBreed, 
+                                    ref = "Pedigree dog")
 
 ```
 
-```{r model01_plotly, echo=TRUE, fig.width=10, fig.height=6, fig.align='center', cache=TRUE}
+To answer this question we will consider the `DogAgeGroupSort` as the response variable, and the different levels of the categorical variable `MixedBreed` as predictors. We now direct our attention to the following set of boxplots showcasing the relevant variables.
 
-dog_count_per_neighborhood_year$KeyDateYear <- as.numeric(as.character(dog_count_per_neighborhood_year$KeyDateYear))
-ggplotly(fit01_ggplot)
+
+```{r linearmodel_boxplots, echo=FALSE, fig.width=10, fig.height=8, fig.align='center'}
+
+# Boxplots
+boxplots_ggplot <- ggplot(df_EN_cleaned, aes(x = MixedBreed, y = DogAgeGroupSort, fill = MixedBreed)) +
+  geom_boxplot() +
+  labs(x = "Mixed Breed Status", y = "Dog Registration Age") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+ggplotly(boxplots_ggplot)
 
 ```
 
-```{r model01_fit_coef, echo=TRUE}
+Based on the boxplots above, there does seem to be a difference in dog ages based on their breed status. Interestingly, the most high outliers are associated with pedigree dogs. We will continue by defining a linear model.
 
-lm.counts.year <- lm(DogCount ~ KeyDateYear * District,
-                     data = dog_count_per_neighborhood_year)
-summary(lm.counts.year)
+```{r linearmodel_lm01, echo=TRUE}
+
+lm.dogs.1 <- lm(DogAgeGroupSort ~ MixedBreed, data = df_EN_cleaned)
+summary(lm.dogs.1)
 
 ```
+
+The intercept refers to the pure breed dogs, while the following predictors represent the differences between themselves and the intercept. The summary of the linear model suggests there is strong evidence that the mean age of pedigree dogs is not equal to 0 at hte time of registration, with a value of 5.7 years, while the other three breed categories' ages differ significantly from that of pedigree dogs. The most noticeable difference is between pedigree dogs and those whose secondary breed is unknown, with the latter being 1.79 years older.
+
+We follow up this insight by assessing the differences between each of them. 
+
+```{r linearmodel_drop1, echo=TRUE}
+
+drop1 <- drop1(lm.dogs.1, test = "F")
+drop1
+
+```
+
+```rverbatim
+# Single term deletions
+
+Model:
+DogAgeGroupSort ~ MixedBreed
+           Df Sum of Sq     RSS    AIC F value    Pr(>F)    
+<none>                  1216314 201636                      
+MixedBreed  3     19384 1235698 202752  376.93 < 2.2e-16 ***
+```
+
+By performing single term deletions and evaluating the resulting statistics of the model, we find that the breed status does indeed have a significant effect on the age of dogs across its different levels, however limiting these observation to one level at a time.
+
+We can further this insight by drawing a General Linear Hypothesis. We will consider all possible pairwise comparisons with a *Tukey Honest Significant Difference Test*.
+
+```{r linearmodel_glth, include=FALSE, warning=FALSE, message=FALSE, error=FALSE, echo=FALSE}
+
+if (!require(multcomp, quietly = TRUE)) {
+  install.packages("multcomp")
+  library(multcomp)
+}
+
+glth.test.1 <- glht(model = lm.dogs.1,
+                    linfct = mcp(MixedBreed = "Tukey"))
+summary(glth.test.1)
+
+```
+
+```{r linearmodel_glth_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE}
+
+plot(glth.test.1)
+
+```
+
+
 
 ---
 
 ### 3.2. Generalized Linear Model (Poisson)
+
+---
+
+### 3.3. Generalized Linear Model (Binomial)
 
 We set out to answer the following goal: _Identifying Popular Breeds_.
 
@@ -1326,12 +1388,6 @@ compared to owning an unknown breed. For this, a binomial logistic regression ma
 This is because the response variable is binary: either a pet owner owns a Chihuahua (let say, coded as 1)
 or they own an unknown breed (we will code this as 0).
 
-
-
----
-
-### 3.3. Generalized Linear Model (Binomial)
-
 ---
 
 ### 3.4. Generalized Additive Model (Binomial)
@@ -1381,7 +1437,7 @@ if (!require(ROCR, quietly = TRUE)) {
 
 ```
 
-```{r neuralnetwork_sampling, include=FALSE, cache=TRUE, cache.rebuild=FALSE}
+```{r neuralnetwork_sampling, include=FALSE}
 
 # Select a subset of variables of interest
 variables_net <- c("OwnerAgeGroupCd",
@@ -1422,7 +1478,7 @@ df_test <- df_net[-trainIndex, ]
 
 ```
 
-``` {r neuralnetwork_train, include=FALSE, cache=TRUE}
+``` {r neuralnetwork_train, include=FALSE}
 
 # Cache save location
 model_path <- "ML1_Final_Dogs_cache/nnet/breed_net.rds"
@@ -1456,14 +1512,14 @@ if (file.exists(model_path)) {
 
 ```
 
-```{r neuralnetwork_print, include=TRUE, cache=TRUE}
+```{r neuralnetwork_print, include=TRUE}
 
 breed_net
 breed_net$finalModel
 
 ```
 
-```{r neuralnetwork_predict, include=FALSE, cache=TRUE}
+```{r neuralnetwork_predict, include=FALSE}
 
 # Make predictions on the test set
 predictions_binary <- predict(breed_net, newdata = df_test)
@@ -1482,7 +1538,7 @@ colnames(cm_binary_df) <- c("Prediction", "Reference", "Freq")
 
 ```
 
-``` {r neuralnetwork_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', cache=TRUE, fig.align='center'}
+``` {r neuralnetwork_plot, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.keep='all', fig.align='center'}
 
 #### PLOTTING THE MODEL ####
 
@@ -1495,7 +1551,7 @@ plot(final_model)
 
 After running the code, the final model is a neural network with 16 input nodes, 15 hidden nodes, and 1 output node, totalling 271 weights. However, an evaluation of the confusion matrix and ROC curves indicates insufficient evidence to support the model's validity for the given variables. This issue might stem from the selection of variables; expanding the set to include more variables from the dataset might improve the model. Alternatively, it could be that an artificial neural network is not the most suitable model for addressing this particular research question.
 
-```{r neuralnetwork_conf_plot, echo=FALSE, message=FALSE, warning=FALSE, cache=TRUE, fig.align='center'}
+```{r neuralnetwork_conf_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
 
 # Confusion matrix plot
 net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
@@ -1511,7 +1567,7 @@ ggplotly(net_ggplot)
 ```
 After building the model with an 80% training subset of the total dataset, we use it to predict values for the remaining 20%. We evaluate the model's performance using a confusion matrix, which allowe us to compare our predicted values with the actual values of the test subset. The model successfully classifies 10,098 dogs as pure-bred, with only 44 being misclassified. However, this good result is overshadowed by the misclassification of 4,020 mixed-breed dogs, with only 31 correct predictions. This suggests that the model wrongly tends to classify most dogs as pure-bred.
 
-```{r neuralnetwork_quality, include=FALSE, cache=TRUE}
+```{r neuralnetwork_quality, include=FALSE}
 
 # Switch the type to "prob"
 pred_prob <- predict(breed_net,

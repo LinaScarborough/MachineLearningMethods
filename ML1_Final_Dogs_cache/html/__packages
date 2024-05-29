@@ -12,6 +12,11 @@ gridExtra
 RColorBrewer
 forcats
 treemap
+mvtnorm
+survival
+MASS
+TH.data
+multcomp
 nnet
 lattice
 caret
