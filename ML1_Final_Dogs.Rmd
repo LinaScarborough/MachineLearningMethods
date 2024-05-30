@@ -100,7 +100,25 @@ library(treemap)
 ```
 
 
-## 1. Presentation of the case
+## 1. Introduction
+
+### 1.1. Presentation of the case
+
+Pet Paradise, a successful Zürich-based pet shop business, wants to expand. However, the owner is not aware of current and future customer needs. The owner has approached us to advise what predictions we can make about canine breeds, ages, neighborhood concentrations and distributions, to figure out where to open the next Pet Paradise branch and what products to offer there.
+
+The objective of our report is to advise Pet Paradise and predict dog breed trends, in order to facilitate targeted marketing. Our analysis delves into canine and pet owner data. We have explored Zürich's neighborhoods to identify prevailing canine demographics and trends. So our predictive analysis extends beyond just current demographics to anticipate future trends, allowing Pet Paradise to stay ahead of evolving customer needs. 
+
+By monitoring shifts in dog ownership patterns, breed popularity, and lifestyle preferences (size, number of dogs), Pet Paradise can adapt its product offerings and marketing strategies.
+
+With our help, Pet Paradise can leverage data-driven insights to grow their business and help Zurich’s canines live to their best health and dog-happiness. We envision Pet Paradise expanding into other cantons too if they foster the customer satisfaction to shape Switzerland’s pet industry landscape.
+
+### 1.1. Motivations
+
+Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a [2013 study](https://sat.gstsvs.ch/fileadmin/media/pdf/archive/2013/04/SAT155040219.pdf), proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
+
+Additionally, in a [publication](https://statistik.stadt-zuerich.ch/modules/StatNat/1984/1984_ZSN_Hunde-und-Hundebesitzer-in-der-Stadt-Zuerich.pdf) by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
+
+Moreover, our data science team consists of individuals who are deeply passionate about dogs, each with varying degrees of personal experience in pet ownership, and understand the importance of analyzing the current dynamics between humans and dogs in Switzerland from an analytical perspective.
 
 ---
 
@@ -1328,13 +1346,11 @@ print(missing_values) # no missing values :)
 
 # Summary of DogAgeGroupCd
 summary(df_subset$DogAgeGroupCd)
-# Output shows max value 999 -> nonsensical. It refers to meaning "age unknown". So we replace it with the average age.
+# Output shows max value 999 -> "unkown". We replace it with the average age.
 mean_dog_age <- mean(df_subset$DogAgeGroupCd[df_subset$DogAgeGroupCd != 999], na.rm = TRUE)
 df_subset <- df_subset %>%
   mutate(DogAgeGroupCd = ifelse(DogAgeGroupCd == 999, mean_dog_age, DogAgeGroupCd))
-summary(df_subset$DogAgeGroupCd) # Now output makes much more sense.
-#  Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
-#0.000   2.000   5.000   5.887   9.000  23.000
+summary(df_subset$DogAgeGroupCd) 
 
 # Distributions
 table(df_subset$DogSexCd)

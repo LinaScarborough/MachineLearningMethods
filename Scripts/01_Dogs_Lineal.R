@@ -30,6 +30,7 @@ boxplots_ggplot <- ggplot(df_EN_cleaned, aes(x = MixedBreed,
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Convert to an interactive plot
+ggplotly(boxplots_ggplot)
 
 
 ## LINEAR MODEL
