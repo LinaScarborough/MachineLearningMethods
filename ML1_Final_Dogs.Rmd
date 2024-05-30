@@ -1226,6 +1226,8 @@ shinyApp(ui = ui, server = server)
 
 ### 3.1. Linear Model: dog age by breed status
 
+#### 3.1.1. Linear Model for hypothesis testing: dog age by breed status
+
 For the first chapter in the machine learning models we begin with a linear model that will test the effect of a categorical variable. To do this we set ourselves the following question: _does the breed status have an effect on the age at which dogs are registered?_
 
 Understanding typical registration ages for different breeds will allow Pet Paradise to target marketing effectively, reaching owners at the right stage of their pet ownership journey. Additionally, these insights can inform strategic inventory management, anticipating demand for breed-specific products and offering tailored advice to enhance customer satisfaction.
@@ -1323,7 +1325,120 @@ In the above _Tukey Honest Significant Difference Test_ the similarity between m
 
 ---
 
+#### 3.1.1. Linear Model: dog count over time
+
+As an additional implementation of linear models, we now aim at answering the following research question: _how do dog counts evolve over time?_ To do so we will build a linear model that will provide some information about the trends in the time series of registered dog count data over the time period recorded, as well as some predictions for the following 10 years.
+
+```{r linearmodel2_count, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+# Declare the new copied dataframe
+df_EN_lm <- df_EN_EDA
+
+# Ensure KeyDateYear is numeric
+df_EN_lm$KeyDateYear <- as.numeric(as.character(df_EN_lm$KeyDateYear))
+
+# Aggregate data to get the total dog count per district per year
+annual_dog_counts <- df_EN_lm %>%
+  filter(!is.na(DistrictSort)) %>%
+  group_by(KeyDateYear, DistrictSort) %>%
+  summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+  arrange(KeyDateYear, DistrictSort)
+
+# Fit the linear regression model
+lm_model <- lm(TotalDogs ~ DistrictSort + KeyDateYear, data = annual_dog_counts)
+summary(lm_model)
+
+# Predictions
+new_data <- data.frame(
+  KeyDateYear = c(2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2030, 2040, 2050),
+  DistrictSort = factor(rep(1:12, each = 12))
+)
+
+# Predict dog counts
+predictions <- predict(lm_model, newdata = new_data)
+
+# Combine observed and predicted data for plotting
+combined_data <- merge(annual_dog_counts, data.frame(new_data, predicted_count = predictions), by = c("KeyDateYear", "DistrictSort"), all = TRUE)
+head(combined_data)
+
+# Create the line plot
+p <- ggplot(combined_data, aes(x = KeyDateYear)) +
+  #geom_line(aes(y = TotalDogs, color = DistrictSort, group = DistrictSort), size = 0.5) +  # Observed data
+  geom_point(aes(y = TotalDogs, color = DistrictSort), size = 2) +  # Observed data points
+  geom_line(aes(y = predicted_count, color = DistrictSort, group = DistrictSort), linetype = "solid", size = 0.5) +  # Predicted data
+  scale_x_continuous(breaks = unique(combined_data$KeyDateYear)) +  # Ensure each year is shown on the x-axis
+  scale_color_viridis_d(name = "District") +
+  theme_minimal() +
+  xlim(2015, 2030) + 
+  ylim(0, 3000) + 
+  labs(title = "LM: Total Count of Dogs by District Over Years with Predictions",
+       x = "Year",
+       y = "Total Number of Dogs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right")
+
+ggplotly(p)
+
+```
+
+---
+
 ### 3.2. Generalized Linear Model (Poisson)
+
+#### 3.2.2. Generalized Linear Model: dog count over time
+
+As a second implementation of Generalized Linear Models, we return to the previously introduced research question: _how do dog counts evolve over time?_
+
+```{r GLM_model - Total Count of Dogs by District Over Years with Predictions, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+# Declare the new copied dataframe
+df_EN_glm <- df_EN_EDA
+
+# Aggregate data to get the total dog count per district per year
+annual_dog_counts <- df_EN_glm %>%
+  filter(!is.na(DistrictSort)) %>%
+  group_by(KeyDateYear, DistrictSort) %>%
+  summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+  arrange(KeyDateYear, DistrictSort)
+
+# Fit the GLM model
+glm_model <- glm(TotalDogs ~ KeyDateYear + DistrictSort, data = annual_dog_counts, family = poisson())
+
+# Predictions
+new_data <- data.frame(
+  KeyDateYear = c(2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2030, 2040, 2050),
+  DistrictSort = factor(rep(1:12, each = 12))
+)
+
+# Predict dog counts
+predictions <- predict(glm_model, newdata = new_data, type = "response")
+prediction_data <- data.frame(KeyDateYear = new_data$KeyDateYear, DistrictSort = new_data$DistrictSort, predicted_count = predictions)
+
+# Adjust DistrictSort to have levels from 1 to 12 as indicated
+df_EN_glm$DistrictSort <- factor(df_EN_glm$DistrictSort, levels = as.character(1:12))
+
+# Combine observed and predicted data for plotting
+combined_data <- merge(annual_dog_counts, prediction_data, by = c("KeyDateYear", "DistrictSort"), all = TRUE)
+
+# Create the line plot
+p <- ggplot(combined_data, aes(x = KeyDateYear)) +
+  #geom_line(aes(y = TotalDogs, color = DistrictSort, group = DistrictSort), size = 0.5) +  # Observed data
+  geom_point(aes(y = TotalDogs, color = DistrictSort), size = 2) +  # Observed data points
+  geom_line(aes(y = predicted_count, color = DistrictSort, group = DistrictSort), linetype = "solid", size = 0.5) +  # Predicted data
+  scale_x_continuous(breaks = unique(combined_data$KeyDateYear)) +  # Ensure each year is shown on the x-axis
+  scale_color_viridis_d(name = "District") +
+  theme_minimal() +
+  xlim(2015, 2030) + 
+  ylim(0, 3000) + 
+  labs(title = "GLM: Total Count of Dogs by District Over Years with Predictions",
+       x = "Year",
+       y = "Total Number of Dogs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right")
+
+ggplotly(p)
+
+```
 
 ---
 
@@ -1408,7 +1523,176 @@ or they own an unknown breed (we will code this as 0).
 
 ---
 
-### 3.4. Generalized Additive Model (Binomial)
+### 3.4. Generalized Additive Model
+
+For the Generalized Additive Model chapter we again direct our attention to the previously introduced research question: _how do dog counts evolve over time?_
+
+As a straightforward implementation of the GAM model, we set ourselves to produce a regression of the registered count data, grouped by districts of the city, analyze their evolution over time, and additionally provide predictions for the next 10 years.
+
+```{r gam_libraries, include=FALSE}
+
+ # GAM
+if (!require(mgcv, quietly = TRUE)) {install.packages("mgcv")}
+library(mgcv)
+
+if (!require(effects, quietly = TRUE)) {install.packages("effects")}
+library(effects)
+
+
+```
+
+#### 3.4.1. GAM model: dog count over time
+
+```{r gam_model_simple - Total Count of Dogs by District Over Years with Predictions, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+df_EN_gam <- df_EN_EDA
+
+# Aggregate data to get the total dog count per district per year
+annual_dog_counts <- df_EN_gam %>%
+  filter(!is.na(DistrictSort)) %>%
+  group_by(KeyDateYear, DistrictSort) %>%
+  summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+  arrange(KeyDateYear, DistrictSort)
+
+# Fit the GAM model with reduced knots
+gam_model_simple <- gam(TotalDogs ~ s(KeyDateYear, bs = "cr", k = 4) + s(DistrictSort, bs = "re"),
+                        data = annual_dog_counts, method = "REML", family = poisson(link = "log"))
+summary(gam_model_simple)
+
+# Predictions
+new_data <- data.frame(
+  KeyDateYear = c(2015, 2016, 2017, 2018, 2019, 2020, 2021, 2022, 2023, 2030, 2040, 2050),
+  DistrictSort = factor(rep(1:12, each = 12))
+)
+
+# Predict dog counts
+predictions <- predict(gam_model_simple, newdata = new_data, type = "response")
+prediction_data <- data.frame(KeyDateYear = new_data$KeyDateYear, DistrictSort = new_data$DistrictSort, predicted_count = predictions)
+
+# Adjust DistrictSort to have levels from 1 to 12 as indicated
+df_EN_gam$DistrictSort <- factor(df_EN_gam$DistrictSort, levels = as.character(1:12))
+
+# Combine observed and predicted data for plotting
+combined_data <- merge(annual_dog_counts, prediction_data, by = c("KeyDateYear", "DistrictSort"), all = TRUE)
+head(combined_data)
+
+# Create the line plot
+p <- ggplot(combined_data, aes(x = KeyDateYear)) +
+  #geom_line(aes(y = TotalDogs, color = DistrictSort, group = DistrictSort), size = 0.5) +  # Observed data
+  geom_point(aes(y = TotalDogs, color = DistrictSort), size = 2) +  # Observed data points
+  geom_line(aes(y = predicted_count, color = DistrictSort, group = DistrictSort), linetype = "solid", size = 0.5) +  # Predicted data
+  scale_x_continuous(breaks = unique(combined_data$KeyDateYear)) +  # Ensure each year is shown on the x-axis
+  scale_color_viridis_d(name = "District") +
+  theme_minimal() +
+  xlim(2015, 2030) + 
+  ylim(0, 3000) + 
+  labs(title = "GAM: Total Count of Dogs by District Over Years with Predictions",
+       x = "Year",
+       y = "Total Number of Dogs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right")
+
+ggplotly(p)
+
+```
+
+We now proceed to further omptimize the GAM model.
+
+```{r gam_model_refined - Total Count of Dogs by District Over Years with Predictions, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+# Create a subset of the data where DistrictSort is a factor
+df_subset <- df_EN_gam %>%
+  filter(!is.na(DistrictSort)) %>%
+  mutate(DistrictSort = factor(DistrictSort, levels = as.character(1:12)))
+
+# Aggregate data to get the total dog count per district per year
+annual_dog_counts <- df_subset %>%
+  group_by(KeyDateYear, DistrictSort) %>%
+  summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
+  arrange(KeyDateYear, DistrictSort)
+
+# Fit the simplified GAM model
+gam_model_refined <- gam(TotalDogs ~ s(KeyDateYear, bs = "cr", k = 8) +
+                         s(DistrictSort, bs = "re"),
+                         data = annual_dog_counts, method = "REML", family = poisson(link = "log"))
+summary(gam_model_refined)
+
+# Predictions
+new_data <- data.frame(
+  KeyDateYear = rep(c(2015:2023, 2030, 2040, 2050), each = 12),
+  DistrictSort = factor(rep(1:12, times = 12), levels = as.character(1:12))
+)
+
+# Predict dog counts
+predictions <- predict(gam_model_refined, newdata = new_data, type = "response")
+prediction_data <- data.frame(KeyDateYear = new_data$KeyDateYear, DistrictSort = new_data$DistrictSort, predicted_count = predictions)
+
+# Combine observed and predicted data for plotting
+combined_data <- merge(annual_dog_counts, prediction_data, by = c("KeyDateYear", "DistrictSort"), all = TRUE)
+
+# Create the line plot
+p <- ggplot(combined_data, aes(x = KeyDateYear)) +
+  geom_point(aes(y = TotalDogs, color = DistrictSort), size = 2) +  # Observed data points
+  geom_line(aes(y = predicted_count, color = DistrictSort, group = DistrictSort), linetype = "solid", size = 0.5) +  # Predicted data
+  scale_x_continuous(breaks = unique(combined_data$KeyDateYear)) +  # Ensure each year is shown on the x-axis
+  scale_color_viridis_d(name = "District") +
+  theme_minimal() +
+  xlim(2015, 2030) + 
+  ylim(0, 3000) + 
+  labs(title = "GAM refined: Total Count of Dogs by District Over Years with Predictions",
+       x = "Year",
+       y = "Total Number of Dogs") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        legend.position = "right")
+
+ggplotly(p)
+
+```
+
+#### 3.4.2. Model comparison
+
+We now look at some comparison now between the above two models, as well as the GLM that was introduced earlier.
+
+```{r gam_comparisons, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE}
+
+combined_data <- combined_data
+
+# Create scatterplot for residuals vs fitted values
+plot(gam_model_simple$fitted.values, resid(gam_model_simple), col = "darkturquoise", 
+     xlab = "Fitted values", ylab = "Residuals", 
+     main = "GAM Comparison: Residuals vs Fitted Values", pch = 8)
+points(gam_model_refined$fitted.values, resid(gam_model_refined), col = "goldenrod", pch = 8)
+points(glm_model$fitted.values, resid(glm_model), col = "darksalmon", pch = 8)
+legend("topright", legend = c("GLM", "GAM", "refined GAM"), col = c("darksalmon", "darkturquoise", "goldenrod"), pch = 8)
+grid()
+
+```
+
+```{gam_comparisons_2, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE}
+
+# Extract and plot the effect of time for a few districts
+library(effects)
+for(district in unique(combined_data$prediction_count)[1:12]) {
+  effect_data <- effect("KeyDateYear", gam_model_refined, xlevels = list(DistrictSort = district))
+  effect_df <- as.data.frame(effect_data)
+
+  ggplot(effect_df, aes(x = KeyDateYear, y = fit)) +
+    geom_line(shade = TRUE, size = 1) +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2) +
+    labs(title = paste("Effect of Year in District", district),
+         x = "Year", y = "Fitted TotalDogs Count") +
+    theme_minimal()
+}
+
+```
+
+```{gam_comparisons_AIC, echo=TRUE, include=FALSE}
+
+# Using AIC for model comparison
+aic_comparison <- AIC(gam_model_simple, gam_model_refined)
+print(aic_comparison)
+
+```
 
 ---
 
