@@ -99,7 +99,6 @@ library(treemap)
 
 ```
 
-
 ## 1. Introduction
 
 ### 1.1. Presentation of the case
@@ -284,12 +283,14 @@ This section presents an interactive visualization that displays unique owner ID
 
 ```{r shiny, unique owners by year, by age group and by gender, echo=FALSE, message=FALSE, warning=FALSE}
 
+df_EN_EDA01 <- df_EN_EDA
+
 # Define UI
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(df_EN_EDA$KeyDateYear)),
+                        choices = unique(df_EN_EDA01$KeyDateYear)),
             selectInput("selectedGender", "Select Gender:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
             helpText("Displays unique owner IDs by age group and selected gender for the chosen year.")
@@ -306,12 +307,12 @@ server <- function(input, output) {
         # Aggregate unique Owner IDs by Age Group, Year, and Gender
         if (input$selectedGender == "all") {
             # Sum across both genders
-            unique_owner_counts_gender <- df_EN_EDA %>%
+            unique_owner_counts_gender <- df_EN_EDA01 %>%
                 group_by(KeyDateYear, OwnerAgeGroup) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop')
         } else {
             # Filter for a specific gender
-            unique_owner_counts_gender <- df_EN_EDA %>%
+            unique_owner_counts_gender <- df_EN_EDA01 %>%
                 group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop') %>%
                 filter(OwnerSex == input$selectedGender)
@@ -319,7 +320,7 @@ server <- function(input, output) {
 
         # Adjust factor levels
         unique_owner_counts_gender$OwnerAgeGroup <- factor(unique_owner_counts_gender$OwnerAgeGroup,
-                                                           levels = unique(df_EN_EDA$OwnerAgeGroup[order(df_EN_EDA$OwnerAgeGroup)]))
+                                                           levels = unique(df_EN_EDA01$OwnerAgeGroup[order(df_EN_EDA01$OwnerAgeGroup)]))
 
         # Filter data for the specific year
         data_for_year_gender <- filter(unique_owner_counts_gender, KeyDateYear == as.numeric(input$selectedYear))
@@ -1222,7 +1223,7 @@ shinyApp(ui = ui, server = server)
 
 ---
 
-## 3. Models
+## 3. Machine Learning Models
 
 ### 3.1. Linear Model: dog age by breed status
 
@@ -1325,7 +1326,7 @@ In the above _Tukey Honest Significant Difference Test_ the similarity between m
 
 ---
 
-#### 3.1.1. Linear Model: dog count over time
+#### 3.1.2. Linear Model: dog count over time
 
 As an additional implementation of linear models, we now aim at answering the following research question: _how do dog counts evolve over time?_ To do so we will build a linear model that will provide some information about the trends in the time series of registered dog count data over the time period recorded, as well as some predictions for the following 10 years.
 
@@ -1444,82 +1445,207 @@ ggplotly(p)
 
 ### 3.3. Generalized Linear Model (Binomial)
 
-We set out to answer the following goal: _Identifying Popular Breeds_.
+We introduction our binomial GLM section by defining the following goal: _predicting a dog's sex based on its age_. In order to work with such models, the response variable must first be transformed to a 0-1 response, as it is originally coded as either 1 for male or 2 for female. Our objective is to assess if there is any significant relationship between dog age and the likelihood of it being either male or female.
 
-The model can accurately predict the popularity of different dog breeds based on age and sex.
+```{r glm_bi_libraries, include=FALSE}
 
-Pet Paradise can use the model predictions to optimize inventory management by stocking up on products that are likely to be in higher demand based on the popularity of different breeds. For example, if certain breeds are more popular among senior dog owners, Pet Paradise can introduce specialized products such as senior dog food or joint supplements targeted towards that demographic.
+if (!require(reshape2, quietly = TRUE))
+  {install.packages("reshape2")}
+library(reshape2)
 
-``` {r glm_part01, include=FALSE, echo=TRUE}
+if (!require(MASS, quietly = TRUE))
+  {install.packages("MASS")}
+library(MASS)
 
-# Create a new dataframe with the selected variables
-df_subset <- df_EN[, c("PrimaryBreed", "DogAgeGroupCd", "DogSexCd")]
+if (!require(caret, quietly = TRUE))
+  {install.packages("caret")}
+library(caret)
 
-# Clean NAs
-missing_values <- colSums(is.na(df_subset))
-print(missing_values) # no missing values :)
+if (!require(gplots, quietly = TRUE))
+  {install.packages("gplots")}
+library(gplots)
 
-# Summary of DogAgeGroupCd
-summary(df_subset$DogAgeGroupCd)
-# Output shows max value 999 -> "unkown". We replace it with the average age.
-mean_dog_age <- mean(df_subset$DogAgeGroupCd[df_subset$DogAgeGroupCd != 999], na.rm = TRUE)
-df_subset <- df_subset %>%
+```
+
+``` {r glm_bi_preparation, include=FALSE}
+
+# binomials work on binary data only, so dog sex for this dataset must be 0 or 1. Ie Change from 1 and 2.
+df_EN$DogSexCd[df_EN$DogSexCd == 1] <- 0
+df_EN$DogSexCd[df_EN$DogSexCd == 2] <- 1
+
+```
+
+``` {r glm_bi_fit1, include=TRUE, echo=TRUE}
+
+glm_dog_sex_age <- glm(DogSexCd ~ DogAgeGroupCd, family = binomial, data = df_EN)
+summary(glm_dog_sex_age)
+
+exp_coef <- exp(coef(glm_dog_sex_age))
+percentage_change <- (exp_coef - 1) * 100
+percentage_change
+
+```
+
+The coefficient for `DogAgeGroupCd` is 0.0035 with a p-value of 0.0104, indicating statistical significance.
+For every year increase in dog age, the probability of being female increase by 0.35%, holding other variables constant.
+While the statistical significance of the coefficient for a dog's age suggests that there is evidence to support the relationship between dog age and the probability of being female,
+the practical significance of a 0.35% increase in odds may not be substantial enough to warrant immediate business decisions based solely on this finding.
+
+Further analysis may be needed here. Although the hypothesis was to offer products tailored to the dog's age and gender, and while age appears to influence sex likelihood, additional factors such as breed and size would provide a more sound business decision making.
+
+So more investigation into factors would refine predictions. We look at dog breeds. 
+
+``` {r glm_bi_prep, include=FALSE}
+
+# Select my variables. Updated with Owner Age.
+df <- df_EN[, c("PrimaryBreed", "DogAgeGroupCd", "DogSexCd", "OwnerAgeGroupCd")]
+
+# clean NAs
+missing_values <- colSums(is.na(df))
+print(missing_values) # no missing values
+
+summary(df$DogAgeGroupCd)
+# output shows max value 999 -> nonsensical. It refers to meaning "age unknown". So we replace it with the average age.
+mean_dog_age <- mean(df$DogAgeGroupCd[df$DogAgeGroupCd != 999], na.rm = TRUE)
+df <- df %>%
   mutate(DogAgeGroupCd = ifelse(DogAgeGroupCd == 999, mean_dog_age, DogAgeGroupCd))
-summary(df_subset$DogAgeGroupCd) 
+summary(df$DogAgeGroupCd) # now output makes much more sense.
+#  Min. 1st Qu.  Median    Mean 3rd Qu.    Max.
+#0.000   2.000   5.000   5.887   9.000  23.000
 
 # Distributions
-table(df_subset$DogSexCd)
-# The distribution of dog sexes shows there are 35,409 female dogs (coded 2) and 35,558 male dogs (coded 1).
+table(df$DogSexCd)
+# The distribution of dog sexes shows there are 35,409 female dogs (coded 0) and 35,558 male dogs (coded 1).
 # There's no significant skew towards one sex in the dataset.
 
 # Favourite 5 breeds
-breed_counts <- table(df_subset$PrimaryBreed)
+breed_counts <- table(df$PrimaryBreed)
 sorted_breeds <- sort(breed_counts, decreasing = TRUE)
 top_5_breeds <- head(sorted_breeds, 5)
 top_5_breeds
 
 ```
 
-| Top Breeds         | Unknown   | Chihuahua | Labrador Retriever | Yorkshire Terrier | Jack Russel Terrier |
-|--------------------|-----------|-----------|--------------------|-------------------|---------------------|
-| Number of Dogs     | 9095      | 4828      | 4198               | 2709              | 2579                |
 
-So Pet Paradise must offer mixed breed foods and products. Not only purebred product offerings.
+| Breed              | Unknown   | Chihuahua | Labrador Retriever  | Yorkshire Terrier | Jack Russel Terrier |
+|--------------------|-----------|-----------|---------------------|-------------------|---------------------|
+| Count              | 9095      | 4828      | 4198                | 2709              | 2579                |
 
-``` {r glm_part02}
 
-df_EN_subset <- df_EN
-df_EN_subset$DogSexCd <- ifelse(df_EN_subset$DogSexCd == "Female", 1, 0)
+The most popular dog is a unknown ie. mixed dog breed. So Pet Paradise must offer mixed breed foods and products. Not only purebred product offerings.
 
-# Fit the binomial logistic regression model
-binomial_model <- glm(DogSexCd ~ DogAgeGroupCd, family = binomial, data = df_EN_subset)
+So instead, another sales approach. Let's say, Pet Paradise is trying to target specific dog or owner age groups for marketing or sales purposes. Pet Paradise wants to predict the likelihood of a pet owner in their 40s owning a top 5 breed (e.g., the Chihuahua) compared to owning an unknown breed. For this, a binomial logistic regression makes most sense to use. This is because the response variable is binary: either a pet owner owns a Chihuahua (let say, coded as 1) or they own an unknown breed (we will code this as 0).
 
-# Summary of the model
-summary(binomial_model)
+In terms of identifying popular breeds based on age and sex, Pet Paradise wants to use a model's predictions to optimize inventory management by stocking up on products that are likely to be in higher demand based on the popularity of a given pedigree breed.
 
-# Odds ratios
-exp_coef <- exp(coef(binomial_model))
-print(exp_coef)
+``` {r glm_bi_prep2, include=FALSE}
 
-# Percentage change in odds
-percentage_change <- (exp_coef - 1) * 100
+# Now that the top 5 breeds are identified, a new subset should be created for owners in their 40s and for the top 5 breeds
+owner_40s_df <- df[df$OwnerAgeGroupCd == 40 & df$PrimaryBreed %in% names(top_5_breeds), ]
 
-# Interpretation of the coefficients
-print("Interpretation of Coefficients:")
-print(paste("For every increase in dog age group, the odds of being female increase by",
-            round(percentage_change["DogAgeGroupCd"], 2), "%"))
+# Create a binary variable for Chihuahua ownership
+owner_40s_df$ChihuahuaOwned <- ifelse(owner_40s_df$PrimaryBreed == "Chihuahua", 1, 0)
 
+# Check if there are any 0s in the ChihuahuaOwned column
+head(owner_40s_df)
+any(owner_40s_df$ChihuahuaOwned == 0)  # Yes, we get TRUE because there are other breeds
+
+# Check if there are any 0s in the ChihuahuaOwned column
+any(owner_40s_df$ChihuahuaOwned == 0)  # Should be TRUE if there are other breeds
 
 ```
 
-Older dogs are more likely to be female, if all other variables are equal. Pet Paradise could tailor its pet care,
-such as tailoring products or services to the specific needs of aging female dogs. But, the increase is negligible, at 0.35%.
 
-So instead, another sales approach. Let's say, Pet Paradise is trying to target specific age groups for marketing or sales purposes.
-Pet Paradise wants to predict the likelihood of a pet owner in their 40s owning a top 5 breed (e.g., the Chihuahua)
-compared to owning an unknown breed. For this, a binomial logistic regression makes most sense to use.
-This is because the response variable is binary: either a pet owner owns a Chihuahua (let say, coded as 1)
-or they own an unknown breed (we will code this as 0).
+``` {r glm_bi_fit2, include=TRUE, echo=TRUE}
+
+chihuahua_binomial <- glm(ChihuahuaOwned ~ 1, family = binomial, data = owner_40s_df)
+summary(chihuahua_binomial)
+
+```
+
+
+``` {r glm_bi_fit2_odds, include=TRUE, echo=TRUE}
+
+chihuahua_exp_coef <- exp(coef(chihuahua_binomial))
+chihuahua_exp_coef
+chihuahua_percentage_change <- (chihuahua_exp_coef - 1) * 100
+chihuahua_percentage_change
+
+```
+
+We see that the log-odds of a 40-year-old owning a Chihuahua are -1.29, which is statistically significant. The exponentiated coefficient is 0.27, indicating that the odds of a 40-year-old owning a Chihuahua are 27%. If Pet Paradise targets typically well-earning professionals, i.e., adults in their 40s, and since the likelihood of a dog owner in their 40s owning a Chihuahua is relatively low, Pet Paradise diversify marketing efforts away from pedigree focus and rather highlight a broader range of mixed-breed foods, fur-shampoos and other products. This strategy will help attract well-earning customers who may own mixed or different breeds.
+
+To check a last potential business case, we can check the reverse; predict which owner age group is more likely to own a Chihuahua, because we have a binary variable (ChihuahuaOwned: 1 for ownership and 0 for no ownership) and the remaining predictor variables (PrimaryBreed, DogAgeGroupCd, DogSexCd, and OwnerAgeGroupCd). We will try o predict which owner age group is more likely to own a Chihuahua.
+
+```rverboatim
+chihuahua_age_bracket <- glm(formula = ChihuahuaOwned ~ PrimaryBreed + DogAgeGroupCd + DogSexCd + OwnerAgeGroupCd, family = binomial, data = owner_40s_df)
+summary(chihuahua_age_bracket)
+
+# Collinearity because model didn't converge. We calculate variance inflation factors
+vif_values <- car::vif(chihuahua_age_bracket)
+vif_values
+```
+
+The VIF produced by the above code shows that the model has perfect multicollinearity. It creates in linear dependencies among predictor variables. What this means, is that when there are categorical variables with many levels, it leads to unreliable predictions. So, if Pet Paradise is trying to predict which customers want to buy a product based on their age braket, breed of dog, etc, such a model with these singularities might suggest targeting certain groups of customers when, in fact, the data is too ambiguous to make such recommendations confidently We will compare the first two of the three models to determine the better fit instead.
+
+``` {r glm_bi_comp1, include=FALSE}
+
+# AIC and BIC for Model 1: Dog Sex vs. Age
+aic_model1 <- AIC(glm_dog_sex_age)
+bic_model1 <- BIC(glm_dog_sex_age)
+
+# AIC and BIC for Model 2: Chihuahua Ownership in 40s
+aic_model2 <- AIC(chihuahua_binomial)
+bic_model2 <- BIC(chihuahua_binomial)
+
+```
+
+``` {r glm_bi_comp2, include=TRUE, echo=TRUE}
+
+cat("Model 1 - Dog Sex vs. Age:\n")
+cat("AIC:", aic_model1, "\n")
+cat("BIC:", bic_model1, "\n\n")
+
+cat("Model 2 - Chihuahua Ownership in 40s:\n")
+cat("AIC:", aic_model2, "\n")
+cat("BIC:", bic_model2, "\n")
+
+```
+
+We see from the Akaike Information Criterion and Bayesian Information Criterion that the second model, i.e. Chihuahua Ownership in an owner's 40s, has much lower AIC and BIC values than the Dog Sex vs. Age model. So model 2 provides a better fit to the data. Because the models contain fewer than 2 terms, checking collinearity doesn't make sense. We check the confusion matrices instead.
+
+``` {r glm_bi_comp3, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6, }
+
+# Confusion matrix for Dog Sex vs. Age
+predicted_probabilities <- predict(glm_dog_sex_age, type = "response")
+predicted_classes <- ifelse(predicted_probabilities > 0.5, 1, 0)
+confusion_glm1 <- table(df_EN$DogSexCd, predicted_classes)
+confusion_glm1
+
+```
+
+``` {r glm_bi_comp4, include=FALSE}
+
+# 1. Confusion matrix values
+TN <- 15813
+FP <- 19596
+FN <- 14672
+TP <- 20886
+
+# accuracy and precision
+accuracy <- ((TP + TN) / (TP + TN + FP + FN)) * 100
+precision <- (TP / (TP + FP)) * 100
+
+# sensitivity
+recall <- (TP / (TP + FN)) * 100
+
+```
+
+The first confusion matrix shows that there are correctly predicted the negatives was 15,813 instances. The false positive representing incorrectly predicted the positive cases was 19,596 false positives. There were 14,672 false negative predictions and 20,886 true positives. This means the first binomial model has an accuracy of 52% and a precision of 52%. The Sensitivity was around 59%, where of all actual positive instances were correctly identified by the model.
+
+The client question of this analysis was to develop and compare binomial logistic regression models to predict outcomes regarding dog ownership based on given variables. We examined on two main models: one predicting the sex of the dog based on its age group and another predicting the most popular pedigree ownership among dog owners in their prime income earning years in their 40s.
+
+The first model offered insights into the relationship between dog age and sex but had limited predictive power. The second model provided a baseline probability of pedigree ownership based on created binary variables of ownership vs non-ownership to target a very specific demographic niche. While attempting to include multiple predictors in the third pedigree ownership model, perfect multicollinearity was detected, resulting in unstable estimates and difficulties in model convergence. For Pet Paradise, focusing on targeting broader product ranges to well-earning professionals, rather than narrowly focusing on pedigree breeds, could be more effective.
 
 ---
 
@@ -1531,13 +1657,11 @@ As a straightforward implementation of the GAM model, we set ourselves to produc
 
 ```{r gam_libraries, include=FALSE}
 
- # GAM
 if (!require(mgcv, quietly = TRUE)) {install.packages("mgcv")}
 library(mgcv)
 
 if (!require(effects, quietly = TRUE)) {install.packages("effects")}
 library(effects)
-
 
 ```
 
@@ -1867,6 +1991,7 @@ net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fil
 ggplotly(net_ggplot)
 
 ```
+
 After building the model with an 80% training subset of the total dataset, we use it to predict values for the remaining 20%. We evaluate the model's performance using a confusion matrix, which allowe us to compare our predicted values with the actual values of the test subset. The model successfully classifies 10,098 dogs as pure-bred, with only 44 being misclassified. However, this good result is overshadowed by the misclassification of 4,020 mixed-breed dogs, with only 31 correct predictions. This suggests that the model wrongly tends to classify most dogs as pure-bred.
 
 ```{r neuralnetwork_quality, include=FALSE}
@@ -1905,6 +2030,140 @@ The *ROC Curve* displays a closeness to the diagonal, which raises the possibili
 ---
 
 ### 3.6. Support Vector Machine Model
+
+
+``` {r svm_libraries, include=FALSE}
+
+if (!require(e1071, quietly = TRUE)) {
+  install.packages("e1071")
+  library(e1071)
+}
+
+if (!require(MASS, quietly = TRUE)) {
+  install.packages("MASS")
+  library(MASS)
+}
+
+if (!require(caret, quietly = TRUE)) {
+  install.packages("caret")
+  library(caret)
+}
+
+if (!require(doParallel, quietly = TRUE)) {
+  install.packages("doParallel")
+  library(doParallel)
+}
+
+```
+
+``` {r svm_prep, include=FALSE}
+
+df_EN_svm <- df_EN
+
+# Replacing dog age unknowns (999) with mean
+mean_dog_age <- mean(df_EN_svm$DogAgeGroupCd[df_EN_svm$DogAgeGroupCd != 999], na.rm = TRUE)
+
+df_EN_svm <- df_EN_svm %>%
+  mutate(DogAgeGroupCd = ifelse(DogAgeGroupCd == 999, mean_dog_age, DogAgeGroupCd))
+
+# Replacing owner age unknowns (999) with mean
+mean_owner_age <- mean(df_EN_svm$OwnerAgeGroupCd[df_EN_svm$OwnerAgeGroupCd != 999], na.rm = TRUE)
+
+df_EN_svm <- df_EN_svm %>%
+  mutate(OwnerAgeGroupCd = ifelse(OwnerAgeGroupCd == 999, mean_owner_age, OwnerAgeGroupCd))
+
+# For the following plots
+count_data <- df_EN_svm %>% 
+  group_by(DogAgeGroupCd, OwnerAgeGroupCd) %>% 
+  summarize(count = n())
+
+```
+
+``` {r svm_plot1, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
+
+scatter_plot <- ggplot(count_data, aes(x = DogAgeGroupCd, y = OwnerAgeGroupCd, size = count)) +
+  geom_point(color = "seagreen", alpha = 0.7) + 
+  scale_size_continuous(range = c(4, 12)) + 
+  labs(title = "Heatmap of Owner Age Group vs Dog Age Group",
+       x = "Dog Age Group",
+       y = "Owner Age Group") +
+  theme_minimal()
+
+ggplotly(scatter_plot)
+
+```
+
+``` {r svm_sampling_settings, include=FALSE}
+
+set.seed(123)
+intrain <- createDataPartition(y = df_EN_svm$OwnerAgeGroupCd, p = 0.7, list = FALSE)
+training <- df_EN_svm[intrain, ]
+testing <- df_EN_svm[-intrain, ]
+
+trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = TRUE)
+
+```
+
+``` {r svm_linear_tr, include=FALSE}
+
+file_path <- "ML1_Final_Dogs_cache/svm/svm_linear_model.RDS"
+
+if (!file.exists(file_path)) {
+    # If the file doesn't exist, execute SVM model
+    svm_linear <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
+                        data = training,
+                        method = "svmLinear",
+                        trControl = trctrl,
+                        trace = TRUE,
+                        tuneLength = 10)
+
+    saveRDS(svm_linear, file = file_path)
+} else {
+    # If the file exists, load the model
+    svm_linear <- readRDS(file_path)
+}
+```
+
+``` {r svm_linear_sum, fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE, echo=TRUE}
+
+svm_linear
+
+```
+
+
+``` {r svm_linear_confusion, include=FALSE}
+
+# Predictions on testing data
+predictions <- predict(svm_linear, testing)
+predictions <- round(predict(svm_linear, testing), -1) # Round to nearest x10
+
+# Create a table of predicted vs. true values using the testing data
+misclass <- table(predict = predictions, truth = round(testing$OwnerAgeGroupCd, -1))
+misclass
+
+# Convert misclass to a data frame
+misclass_df <- as.data.frame.table(misclass)
+
+```
+
+The predicted results have been adjusted and rounded to their nearest multiple of 10, in order to be able to visualize them against the actual decade time ranges represented in the original data. The following confusion plot shows the frequency of guesses for each age range.
+
+``` {r svm_linear_confusion_plot}
+
+svm_linear_conf <- ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "seagreen") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix",
+       x = "Reference",
+       y = "Prediction",
+       fill = "Frequency")
+
+ggplotly(svm_linear_conf)
+
+```
+
+At a first glance, most of the predictions happen around the 30 age range, specifically misclassifications where the model predicts 40. This is an acceptable error, as it reflects the observations we have previously made that most dog owners belong to those two age groups. No predictions were made for ages outside of the 40-60 range in this case.
 
 ---
 

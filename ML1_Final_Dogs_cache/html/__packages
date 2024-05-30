@@ -30,3 +30,9 @@ gamlss.add
 ROCR
 carData
 effects
+reshape2
+gplots
+e1071
+foreach
+iterators
+doParallel
