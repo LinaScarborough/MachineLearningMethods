@@ -116,8 +116,6 @@ svm_rbf <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
                  tuneLength = 10
 )
 
-svm_linear
-
 svm_rbf
 
 # Save the models

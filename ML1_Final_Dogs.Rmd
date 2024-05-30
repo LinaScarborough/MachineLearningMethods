@@ -111,13 +111,18 @@ By monitoring shifts in dog ownership patterns, breed popularity, and lifestyle 
 
 With our help, Pet Paradise can leverage data-driven insights to grow their business and help Zurich’s canines live to their best health and dog-happiness. We envision Pet Paradise expanding into other cantons too if they foster the customer satisfaction to shape Switzerland’s pet industry landscape.
 
-### 1.1. Motivations
+### 1.2. Motivations
 
 Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a [2013 study](https://sat.gstsvs.ch/fileadmin/media/pdf/archive/2013/04/SAT155040219.pdf), proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
 
 Additionally, in a [publication](https://statistik.stadt-zuerich.ch/modules/StatNat/1984/1984_ZSN_Hunde-und-Hundebesitzer-in-der-Stadt-Zuerich.pdf) by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
 
 Moreover, our data science team consists of individuals who are deeply passionate about dogs, each with varying degrees of personal experience in pet ownership, and understand the importance of analyzing the current dynamics between humans and dogs in Switzerland from an analytical perspective.
+
+### 1.3. Disclaimer
+
+The analysis in this report is conducted purely for educational purposes, focusing solely on the statistical modeling and client recommendations. This means that within the confines of this project, sex values for an animal such as dogs within the dataset are interpreter as binary. The findings presented here are not intended to reflect or endorse any particular social reflections related to gender identity.
+We acknowledge that discussions surrounding gender identity are multifaceted for individuals and communities.
 
 ---
 
@@ -199,13 +204,10 @@ Finally, a subset of relevant columns is extracted from the comprehensive datase
 ```{r df_EN_EDA, include=FALSE}
 
 df_EN_EDA <- df_EN %>%
-  select(KeyDateYear, OwnerId, OwnerAgeGroup, OwnerSex, DistrictSort, QuarCd, PrimaryBreed, SecondaryBreed, MixedBreed, BreedType, DogBirthYear, DogAgeGroupCd, DogSex, NumberOfDogs, unique_OwnerId) %>%
+  dplyr::select(KeyDateYear, OwnerId, OwnerAgeGroup, OwnerSex, DistrictSort, QuarCd, PrimaryBreed, SecondaryBreed, MixedBreed, BreedType, DogBirthYear, DogAgeGroupCd, DogSex, NumberOfDogs, unique_OwnerId) %>%
   mutate(NumberOfDogs = as.numeric(as.character(NumberOfDogs))) %>% # Convert NumberOfDogs to numeric
   mutate(across(where(is.character), factor)) %>%
-  mutate_at(vars(KeyDateYear, DistrictSort, QuarCd), factor)
-
-str(df_EN_EDA)
-head(df_EN_EDA, 5)
+  mutate_at(vars(DistrictSort, QuarCd), factor)
 
 ```
 
@@ -283,14 +285,12 @@ This section presents an interactive visualization that displays unique owner ID
 
 ```{r shiny, unique owners by year, by age group and by gender, echo=FALSE, message=FALSE, warning=FALSE}
 
-df_EN_EDA01 <- df_EN_EDA
-
 # Define UI
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
-                        choices = unique(df_EN_EDA01$KeyDateYear)),
+                        choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedGender", "Select Gender:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
             helpText("Displays unique owner IDs by age group and selected gender for the chosen year.")
@@ -307,12 +307,12 @@ server <- function(input, output) {
         # Aggregate unique Owner IDs by Age Group, Year, and Gender
         if (input$selectedGender == "all") {
             # Sum across both genders
-            unique_owner_counts_gender <- df_EN_EDA01 %>%
+            unique_owner_counts_gender <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop')
         } else {
             # Filter for a specific gender
-            unique_owner_counts_gender <- df_EN_EDA01 %>%
+            unique_owner_counts_gender <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
                 summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop') %>%
                 filter(OwnerSex == input$selectedGender)
@@ -320,7 +320,7 @@ server <- function(input, output) {
 
         # Adjust factor levels
         unique_owner_counts_gender$OwnerAgeGroup <- factor(unique_owner_counts_gender$OwnerAgeGroup,
-                                                           levels = unique(df_EN_EDA01$OwnerAgeGroup[order(df_EN_EDA01$OwnerAgeGroup)]))
+                                                           levels = unique(df_EN_EDA$OwnerAgeGroup[order(df_EN_EDA$OwnerAgeGroup)]))
 
         # Filter data for the specific year
         data_for_year_gender <- filter(unique_owner_counts_gender, KeyDateYear == as.numeric(input$selectedYear))
@@ -389,18 +389,20 @@ Furthermore, to understand the trend in dog population over time, we calculated 
 
 ```{r shiny, yearly dog counts, echo=FALSE, message=FALSE, warning=FALSE}
 
+df_EN_EDA2 <- df_EN_EDA
+
 # Convert NumberOfDogs to numeric
-df_EN_EDA <- df_EN_EDA %>% 
+df_EN_EDA2 <- df_EN_EDA2 %>% 
   mutate(NumberOfDogs = as.numeric(NumberOfDogs))
 
 # Check for any conversion problems
-sum(is.na(df_EN_EDA$NumberOfDogs))
+sum(is.na(df_EN_EDA2$NumberOfDogs))
 
 # Convert KeyDateYear to numeric
-df_EN_EDA$KeyDateYear <- as.numeric(as.character(df_EN_EDA$KeyDateYear))
+df_EN_EDA2$KeyDateYear <- as.numeric(as.character(df_EN_EDA2$KeyDateYear))
 
 # Aggregate data to get total number of dogs per year
-yearly_dog_counts <- df_EN_EDA %>%
+yearly_dog_counts <- df_EN_EDA2 %>%
   group_by(KeyDateYear) %>%
   summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop')
 
@@ -1386,6 +1388,152 @@ ggplotly(p)
 
 ### 3.2. Generalized Linear Model (Poisson)
 
+We constructed a Poisson Generalized Linear Model (GLM) to estimate the number of dog registrations (`NumberOfDogs`) based on the predictors `KeyDateYear` and `DistrictCd`. The goal was to identify trends and distributions in dog ownership across Zurich’s neighborhoods to support Pet Paradise's expansion strategy.
+
+```{r poisson_intro, include=TRUE}
+
+first_poisson_model <- glm(NumberOfDogs ~ KeyDateYear + DistrictCd,
+                     family = poisson,
+                     data = df_EN)
+
+summary(first_poisson_model)
+
+```
+
+```{r poisson_cross_validation, include=FALSE, cache=TRUE}
+
+set.seed(123)
+control <- trainControl(method = "cv", number = 5)
+
+# Train the Poisson GLM model thanks to cross-validation
+cv_model <- train(NumberOfDogs ~ KeyDateYear + DistrictCd,
+                  data = df_EN, method = "glm", family = poisson, trControl = control)
+
+```
+
+```{r poisson_cross_Validation2, include=TRUE}
+
+cv_model
+
+```
+
+We now interpret the results from the Generalized Linear Poisson Model:
+
+- `KeyDateYear`: The coefficient for `KeyDateYear` is -0.0003 with a p-value of 0.832. There's no significant trend over the years in the number of dog registrations. Hence, seasonal trends in dog registrations are not a primary factor for Pet Paradise's planning.
+
+- `DistrictCd`: The coefficient for the neighborhood is -0.0001 with a p-value of 0.927, so no significant difference in dog registrations across different districts. This suggests that district-specific variations in dog registrations might not be substantial.
+
+Specifically in terms of client recommendations, geographical expansion can be addressed. The stable registration numbers mean that given that neither `KeyDateYear` nor `DistrictCd` significantly impact the number of dog registrations, dog ownership seems stable across different years and districts. Therefore, Pet Paradise can consider expanding uniformly across districts rather than focusing on specific areas with presumed higher dog populations.
+
+Therefore in conclusion, this poisson GLM analysis shows a stability in numbers across Zurich. Pet Paradise should leverage this stability and expand based on other factors.
+
+Model Deviance and AIC:
+
+With a null deviance of 191.58 on 70,966 degrees of freedom, the high value indicates considerable variation in the number of dog registrations across the dataset. The residual deviance of 191.53 on 70,964 degrees of freedom how a minimal reduction from the null deviance which means that  the predictors in the model do not significantly improve the fit compared to the null model.
+
+The high AIC value indicates that while the model may have a reasonable fit, it is quite complex relative to the amount of information it provides.
+A Fisher Scoring Iterations of four iterations suggests that the model parameters have quickly converged, which we can expect for GLMs with well-behaved data.
+
+Regarding the cross-validation, we used a 5-fold validation, i.e. breaking the data into five subsets, training on four, and testing on the fifth. The low Root Mean Square Error of 0.0593 shows that the model's predictions are close to the actual values of dog registrations.
+This R-squared shows that the predictors (here `KeyDateYear` and `DistrictCd`) explain almost none of the variability in the number of dog registrations. This is consistent with the insignificant coefficients observed.
+
+In terms of client insights, the null hypothesis was proven correct in this case; the stability in the number of dog registrations across different years and districts suggests that Pet Paradise can plan for uniform expansion without focusing on specific districts. Other factors such as owner's age, whether they own a pedigree dog or not, etc. might be more influential in determining the demand for pet services, which we will examine in further models.
+
+```{r poisson_predictions, include=FALSE}
+
+# Generate predictions using the fitted model
+predictions <- predict(first_poisson_model, type = "response")
+
+```
+
+``` {r poisson_visualization, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6}
+
+# Visualize the actual vs predicted number of dogs
+p <- ggplot(df_EN, aes(x = NumberOfDogs, y = predictions)) +
+  geom_point() +
+  labs(title = "Actual vs Predicted Number of Dogs",
+       x = "Actual Number of Dogs",
+       y = "Predicted Number of Dogs")
+
+ggplotly(p)
+
+```
+
+The above visualization helps us see that there is a poor fit; if the model were performing well, it would be a more diagonal spread of points, showing a clear linear relationship between actual and predicted values. The current chart does not show this pattern, so it is suggesting that the model
+is not capturing the variability in the actual data. Upon reflection, the model was refined to sum the number of dogs per year, i.e. aggregate it.
+
+```{r poisson_2nd_model, include=FALSE}
+# Reiteration of poisson model, now with dogs summed by year for prediction.
+
+# I now sum/aggregate the data by year and district
+sum_data <- df_EN %>%
+  group_by(KeyDateYear, DistrictCd) %>%
+  summarize(NumberOfDogs = sum(NumberOfDogs))
+
+# New fit of  Poisson GLM model
+second_poisson_model <- glm(NumberOfDogs ~ KeyDateYear + DistrictCd,
+                     family = poisson, data = sum_data)
+
+```
+
+``` {r poisson_2nd_model_sum, include=TRUE, echo=TRUE}
+
+summary(second_poisson_model)
+
+```
+
+```{r poisson_2nd_model_pred, include=FALSE}
+
+predictions <- predict(second_poisson_model, type = "response")
+sum_data$PredictedNumberOfDogs = predictions
+
+```
+
+``` {r poisson_2nd_model_vis, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6}
+
+p <- ggplot(sum_data, aes(x = NumberOfDogs, y = PredictedNumberOfDogs)) +
+  geom_point() +
+  geom_smooth(method = "lm", se = FALSE) +
+  labs(title = "Actual vs Predicted Number of Dog Registrations",
+       x = "Actual Number of Dog Registrations",
+       y = "Predicted Number of Dog Registrations")
+
+ggplotly(p)
+
+```
+
+To check which poisson model is better, we compare the goodness-of-fit. This can be done using AIC because the models come from the same dataset, have the same response variable, as well as the same poisson distribution. We also compare coefficients.
+
+
+```{r poisson_comparisons_1, include=TRUE}
+
+summary_first <- summary(first_poisson_model)
+summary_first
+summary_first$deviance[1]
+summary_first$deviance[2]
+summary_first$coefficients
+
+```
+
+```{r poisson_comparisons_2, include=TRUE}
+summary_second <- summary(second_poisson_model)
+summary_second
+summary_second$deviance[1]
+summary_second$deviance[2]
+summary_second$coefficients
+
+```
+
+There is a big difference between the null deviance (24077) and residual (22173). The degrees of freedom here are lower, so the predictors improved the model's fit. The AIC value (23'067) is lower than the first model's AIC (142'281), meaning a better fit. The coefficients of the second model are statistically significant where p-value < 0.001, and shows an increase of registrations per year (RefYear = 0.044). The negative district coefficient needs to be log transformed to be interpreted since it's a Poisson model.
+
+```rverbatim
+exp(District coefficient) = exp(−0.009640) = ca. 0.96
+```
+
+The above value is a percentage, so for every one-unit increase in District (ie just one neighbourhood to the next), the predicted number of dog registrations approximately decreases by 0.96%.
+
+---
+
 #### 3.2.2. Generalized Linear Model: dog count over time
 
 As a second implementation of Generalized Linear Models, we return to the previously introduced research question: _how do dog counts evolve over time?_
@@ -1394,6 +1542,8 @@ As a second implementation of Generalized Linear Models, we return to the previo
 
 # Declare the new copied dataframe
 df_EN_glm <- df_EN_EDA
+df_EN_glm$KeyDateYear <- as.numeric(df_EN_glm$KeyDateYear)
+
 
 # Aggregate data to get the total dog count per district per year
 annual_dog_counts <- df_EN_glm %>%
@@ -1614,7 +1764,7 @@ cat("BIC:", bic_model2, "\n")
 
 We see from the Akaike Information Criterion and Bayesian Information Criterion that the second model, i.e. Chihuahua Ownership in an owner's 40s, has much lower AIC and BIC values than the Dog Sex vs. Age model. So model 2 provides a better fit to the data. Because the models contain fewer than 2 terms, checking collinearity doesn't make sense. We check the confusion matrices instead.
 
-``` {r glm_bi_comp3, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6, }
+``` {r glm_bi_comp3, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6}
 
 # Confusion matrix for Dog Sex vs. Age
 predicted_probabilities <- predict(glm_dog_sex_age, type = "response")
@@ -1779,20 +1929,46 @@ We now look at some comparison now between the above two models, as well as the 
 
 ```{r gam_comparisons, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE}
 
-combined_data <- combined_data
+# Create data frames for each model's fitted values and residuals
+df_gam_simple <- data.frame(
+  fitted_values = gam_model_simple$fitted.values,
+  residuals = resid(gam_model_simple),
+  model = "Simple GAM"
+)
 
-# Create scatterplot for residuals vs fitted values
-plot(gam_model_simple$fitted.values, resid(gam_model_simple), col = "darkturquoise", 
-     xlab = "Fitted values", ylab = "Residuals", 
-     main = "GAM Comparison: Residuals vs Fitted Values", pch = 8)
-points(gam_model_refined$fitted.values, resid(gam_model_refined), col = "goldenrod", pch = 8)
-points(glm_model$fitted.values, resid(glm_model), col = "darksalmon", pch = 8)
-legend("topright", legend = c("GLM", "GAM", "refined GAM"), col = c("darksalmon", "darkturquoise", "goldenrod"), pch = 8)
-grid()
+df_gam_refined <- data.frame(
+  fitted_values = gam_model_refined$fitted.values,
+  residuals = resid(gam_model_refined),
+  model = "Refined GAM"
+)
+
+df_glm <- data.frame(
+  fitted_values = glm_model$fitted.values,
+  residuals = resid(glm_model),
+  model = "GLM"
+)
+
+# Combine the data frames
+combined_data <- rbind(df_gam_simple, df_gam_refined, df_glm)
+
+# Create the ggplot object
+p <- ggplot(combined_data, aes(x = fitted_values, y = residuals, color = model)) +
+  geom_point() +
+  labs(
+    title = "GAM Comparison: Residuals vs Fitted Values",
+    x = "Fitted Values",
+    y = "Residuals"
+  ) +
+  scale_color_manual(values = c("GLM" = "darksalmon", "Simple GAM" = "darkturquoise", "Refined GAM" = "goldenrod")) +
+  theme_minimal() +
+  theme(legend.position = "top")
+
+# Convert the ggplot object to a Plotly object
+ggplotly(p)
 
 ```
 
-```{gam_comparisons_2, fig.align='center', echo=FALSE, message=FALSE, warning=FALSE}
+```{gam_comparisons_2, fig.align='center', echo=TRUE, message=FALSE, warning=FALSE}
 
 # Extract and plot the effect of time for a few districts
 library(effects)
@@ -1810,9 +1986,8 @@ for(district in unique(combined_data$prediction_count)[1:12]) {
 
 ```
 
-```{gam_comparisons_AIC, echo=TRUE, include=FALSE}
+```{gam_comparisons_AIC, echo=TRUE, include=TRUE}
 
-# Using AIC for model comparison
 aic_comparison <- AIC(gam_model_simple, gam_model_refined)
 print(aic_comparison)
 
@@ -1822,7 +1997,7 @@ print(aic_comparison)
 
 ### 3.5. Artificial Neural Network
 
-We start this chapter by posing a research question: _is a dog of pure or mixed breed, based on location and owner and dog’s characteristics?_
+We start this chapter by posing the research question: _is a dog of pure or mixed breed, based on location and owner and dog’s characteristics?_
 
 An artificial neural network (ANN) is the algorithm of choice for this assessment due to its capability to handle complex, non-linear relationships within the dataset. Dogs' breed may depend on various interacting factors, such as age, size, location, and owner demographics, which ANNs can effectively capture and analyze. 
 
