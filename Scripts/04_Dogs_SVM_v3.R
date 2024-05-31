@@ -54,7 +54,7 @@ training <- df_EN_svm[intrain, ]
 testing <- df_EN_svm[-intrain, ]
 
 
-#### LINEAR KERNEL MODEL ####
+#### MODELS TRAINING ####
 
 # Train control
 trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = TRUE)
@@ -67,32 +67,6 @@ svm_linear <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
                     tuneLength = 10)
 
 saveRDS(svm_linear, file = "../ML1_Final_Dogs_cache/svm/svm_linear_model.RDS")
-
-#### LINEAR KERNEL MODEL EVALUATION ####
-
-# Predictions on testing data
-predictions <- predict(svm_linear, testing)
-predictions <- round(predict(svm_linear, testing), -1) # Round to nearest x10
-
-# Create a table of predicted vs. true values using the testing data
-misclass <- table(predict = predictions, truth = round(testing$OwnerAgeGroupCd, -1))
-misclass
-
-# Convert misclass to a data frame
-misclass_df <- as.data.frame.table(misclass)
-
-# Plot confusion matrix
-ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
-  geom_tile(color = "white") +
-  scale_fill_gradient(low = "white", high = "steelblue") +
-  theme_minimal() +
-  labs(title = "Confusion Matrix",
-       x = "Reference",
-       y = "Prediction",
-       fill = "Frequency")
-
-
-#### RADIAL KERNEL MODEL #####
 
 # Train SVM with Radial Basis Function (RBF) kernel
 svm_rbf <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
@@ -108,7 +82,36 @@ saveRDS(svm_rbf, file = "../ML1_Final_Dogs_cache/svm/svm_radial_model.RDS")
 svm_rbf <- readRDS("../ML1_Final_Dogs_cache/svm/svm_radial_model.RDS")
 svm_rbf
 
-#### RADIAL KERNEL MODEL EVALUATION
+
+#### MODEL EVALUATION ####
+
+truth = round(testing$OwnerAgeGroupCd, -1)
+
+# Predictions on testing data
+predictions <- predict(svm_linear, testing)
+predictions <- round(predict(svm_linear, testing), -1) # Round to nearest x10
+
+# Create a table of predicted vs. true values using the testing data
+misclass <- table(predict = predictions, truth)
+misclass
+
+# Convert misclass to a data frame
+misclass_df <- as.data.frame.table(misclass)
+
+# Plot confusion matrix
+ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix",
+       x = "Reference",
+       y = "Prediction",
+       fill = "Frequency")
+
+confMa_linear <- confusionMatrix(as.factor(predictions), 
+                                 as.factor(truth))
+
+
 
 # Predictions on testing data
 predictions <- predict(svm_rbf, testing)
@@ -130,3 +133,10 @@ ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
        x = "Reference",
        y = "Prediction",
        fill = "Frequency")
+
+
+confMa_radial <- confusionMatrix(as.factor(predictions), 
+                                 as.factor(truth))
+
+confMa_linear
+confMa_radial
