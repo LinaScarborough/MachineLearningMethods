@@ -9,6 +9,7 @@ output:
     css: "css/style.css"
     toc: true
     toc_float: true
+bibliography: references.bib
 runtime: shiny
 ---
 
@@ -115,11 +116,11 @@ With our help, Pet Paradise can leverage data-driven insights to grow their busi
 
 ### 1.2. Motivations
 
-Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a 2013 [study](https://sat.gstsvs.ch/fileadmin/media/pdf/archive/2013/04/SAT155040219.pdf), proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
+Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a 2013 [@pospischil2013hundepopulation], proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
 
-Additionally, in a [publication](https://statistik.stadt-zuerich.ch/modules/StatNat/1984/1984_ZSN_Hunde-und-Hundebesitzer-in-der-Stadt-Zuerich.pdf) by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
+Additionally, in a [@statistik1984hunde] by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
 
-Moreover, our data science team consists of individuals who are deeply passionate about dogs, each with varying degrees of personal experience in pet ownership, and understand the importance of analyzing the current dynamics between humans and dogs in Switzerland from an analytical perspective.
+Moreover, our data science team consists of individuals who are deeply passionate about dogs, each with varying degrees of personal experience in pet ownership, and understand the importance of analyzing the current dynamics between humans and dogs in Switzerland from an analytic perspective.
 
 ### 1.3. Disclaimer
 
@@ -131,7 +132,7 @@ The analysis in this report is conducted purely for educational purposes, focusi
 
 ### 2.1. Data source and preparation
 
-As mentioned above, the main data has been sourced from the [opendata.swiss project](https://opendata.swiss/de/dataset/hundebestande-der-stadt-zurich-seit-2015/resource/5f8eafd2-367f-489c-a075-42426d14c586), having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
+As mentioned above, the main data has been sourced from the [@stadtzuerich2024hundebestande], having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
 
 _This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, Sex and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
 
@@ -244,7 +245,7 @@ As can be seen in the structure of the data, the set comprises several observati
   - `Breed1Text` and `Breed1Text2`: referring to dog race denominations and information
   - `MixedBreedText`: additional information regarding race mixing in the dog
   - `DogColorText`: a descriptive name for the colour of the dog
-  - `BreedTypeLong`: referring to the official dog type classification according to the [Zürich Cantonal Law](https://www.zh.ch/content/dam/zhweb/bilder-dokumente/themen/umwelt-tiere/tiere/veterinaeramt/hunde/publikationen/erlaeuterungenzuhuv.pdf)
+  - `BreedTypeLong`: referring to the official dog type classification according to the [@zh2009hundeverordnung]
 
 ---
 
@@ -1754,66 +1755,7 @@ library(effects)
 
 #### 3.4.1. GAM model: evolution of popular breeds
 
-```{r GAM for 5 Top breed  - ALL DISTRICT TOGETHER, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
 
-df_EN_gam <- df_EN_EDA
-
-# Ensure correct type
-df_EN_gam$KeyDateYear <- as.numeric(as.character(df_EN_gam$KeyDateYear))
-df_EN_gam$PrimaryBreed <- factor(df_EN_gam$PrimaryBreed)
-
-# Aggregating data to get count of dogs per breed per year (ignoring district)
-breed_trends <- df_EN_gam %>%
-  group_by(KeyDateYear, PrimaryBreed) %>%
-  summarise(BreedCount = sum(NumberOfDogs), .groups = 'drop') %>%
-  filter(PrimaryBreed != "Unknown" & PrimaryBreed %in% c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser")) %>%
-  as.data.frame()
-
-# Check the structure of the aggregated data
-str(breed_trends)
-
-# Ensure no NA values in the key variables
-breed_trends <- breed_trends %>%
-  filter(!is.na(BreedCount), !is.na(KeyDateYear))
-
-# R-sq.(adj) =  0.994   Deviance explained = 99.6%
-gam_model <- gam(BreedCount ~ te(KeyDateYear, by = PrimaryBreed, k = 9) + s(PrimaryBreed, bs = "re"),
-                 data = breed_trends, method = "REML", family = poisson(link = "log"))
-
-# Prepare new data for prediction
-new_data <- data.frame(
-  KeyDateYear = rep(seq(2015, 2030, by = 1), times = 5),
-  PrimaryBreed = factor(rep(c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"), each = 16),
-                        levels = c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"))
-)
-
-# Predict counts for the new dataset
-new_data$predicted_breed_count <- predict(gam_model, newdata = new_data, type = "response")
-
-# Function to assign colors to breeds
-assign_colors <- function(data) {
-  breeds <- unique(data$PrimaryBreed)
-  colors <- scales::hue_pal()(length(breeds))
-  setNames(colors, breeds)
-}
-breed_color_map <- assign_colors(new_data)
-
-# Plot the results with real data points
-ggplot() +
-  geom_line(data = new_data, aes(x = KeyDateYear, y = predicted_breed_count, color = PrimaryBreed), size = 1) +
-  geom_point(data = breed_trends, aes(x = KeyDateYear, y = BreedCount, color = PrimaryBreed), size = 2) +
-  # ylim(0, 600) +
-  labs(x = "Year", y = "Count", title = "Yearly Trend of Predicted and Actual Breed Counts (Summed across all Districts)") +
-  theme_minimal() +
-  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top") +
-  guides(color = guide_legend(title = "Breed", title.position = "top"))
-
-# Summary and diagnostic plots of the combined model
-summary(gam_model)
-# plot.gam(gam_model)
-
-
-```
 
 
 #### 3.4.2. GAM model: dog count over time
@@ -2424,4 +2366,10 @@ ggplotly(svm_radial_conf)
 
 ## 6. Appendix
 
+---
+
 ### 6.1. Working with generative AI tools
+
+---
+
+## 7. References
