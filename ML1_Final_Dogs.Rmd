@@ -11,6 +11,7 @@ output:
     toc: true
     toc_float: true
 bibliography: references.bib
+link-citations: yes
 runtime: shiny
 ---
 
@@ -117,15 +118,15 @@ With our help, Pet Paradise can leverage data-driven insights to grow their busi
 
 ### 1.2. Motivations
 
-Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a 2013 [@pospischil2013hundepopulation], proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
+Dogs are an integral part of urban communities, with pet ownership having grown parallel to population over the past decades. Zürich and its canton boast the largest population of dogs of any Swiss region, as suggested by a 2013 study [@pospischil2013hundepopulation], proving the value of building a thorough data-driven interpretation of the markets associated with dog ownership. 
 
-Additionally, in a [@statistik1984hunde] by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
+Additionally, in a report [@statistik1984hunde] by the Zürich City Police, historical records and concerns due to the environmental impact of an ever increasing canine population have led to stricter laws against dog-produced waste and specific taxing for dog owners. The implementation of dog registration procedures, which date back several hundred years, has facilitated the collection of valuable statistical data, which provides a glimpse into the relationship between owners and their pets across time (with owner personal information limitations, due to privacy concerns). The existence of such cohesive and easily available data has served as a strong motivating factor for our team to undertake the current project.
 
 Moreover, our data science team consists of individuals who are deeply passionate about dogs, each with varying degrees of personal experience in pet ownership, and understand the importance of analyzing the current dynamics between humans and dogs in Switzerland from an analytic perspective.
 
 ### 1.3. Disclaimer
 
-The analysis in this report is conducted purely for educational purposes, focusing solely on the statistical modeling and client recommendations. This means that within the confines of this project, sex values for an animal such as dogs and their human owners within the dataset are interpreted as binary. The findings presented here are not intended to reflect or endorse any particular social reflections related to Sex identity. We acknowledge that discussions surrounding Sex identity are multifaceted for individuals and communities.
+The analysis in this report is conducted purely for educational purposes, focusing solely on the statistical modeling and client recommendations. This means that within the confines of this project, sex values for an animal such as dogs and their human owners within the dataset are interpreted as binary. The findings presented here are not intended to reflect or endorse any particular social reflections related to sexual identity. We acknowledge that discussions surrounding sex identity are multifaceted for individuals and communities.
 
 ---
 
@@ -133,7 +134,7 @@ The analysis in this report is conducted purely for educational purposes, focusi
 
 ### 2.1. Data source and preparation
 
-As mentioned above, the main data has been sourced from the [@stadtzuerich2024hundebestande], having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
+As mentioned above, the main data has been sourced from the dog register [@stadtzuerich2024hundebestande], having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
 
 _This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, Sex and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
 
@@ -242,11 +243,11 @@ As can be seen in the structure of the data, the set comprises several observati
 **String values**:
 
   - `DistricText`: the name of each larger district of Zürich according to the official division
-  - `QuarterText`: the name of the smaller neighbourhoods which comprise the larger districts
+  - `QuarterText`: the name of the smaller neighborhoods which comprise the larger districts
   - `Breed1Text` and `Breed1Text2`: referring to dog race denominations and information
   - `MixedBreedText`: additional information regarding race mixing in the dog
-  - `DogColorText`: a descriptive name for the colour of the dog
-  - `BreedTypeLong`: referring to the official dog type classification according to the [@ ]
+  - `DogColorText`: a descriptive name for the color of the dog
+  - `BreedTypeLong`: referring to the official dog type classification according to the dog ordinance [@zh2009hundeverordnung]
 
 ---
 
@@ -284,7 +285,7 @@ print(number_of_unique_Owner)
 
 #### 2.2.2. Unique owners by year, by age group and by sex
 
-This section presents an interactive visualization that displays unique owner IDs by age group and Sex for a selected year. The user interface allows the selection of a year and a sex, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
+This section presents an interactive visualization that displays unique owner IDs by age group and sex for a selected year. The user interface allows the selection of a year and a sex, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
 
 ```{r shiny, unique owners by year, by age group and by Sex, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -357,7 +358,7 @@ shinyApp(ui = ui, server = server)
 
 #### 2.2.3. Unique owners by age group over the years
 
-The following visualization shows the count of unique Owner IDs across different age groups over the years. The plot is generated by aggregating unique Owner IDs by age group and year, adjusting factor levels, and creating a line plot.
+The following visualization shows the count of unique owner IDs across different age groups over the years. The plot is generated by aggregating unique owner IDs by age group and year, adjusting factor levels, and creating a line plot.
 
 ```{r cs seasonal trend of Age Group, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -1170,7 +1171,7 @@ shinyApp(ui = ui, server = server)
 
 ## 3. Machine Learning Models
 
-### 3.1. Linear Model: dog age by breed status
+### 3.1. Linear Model
 
 #### 3.1.1. Linear Model for hypothesis testing: dog age by breed status
 
@@ -1343,18 +1344,29 @@ summary(first_poisson_model)
 
 ```
 
-```{r poisson_cross_validation, include=FALSE, cache=TRUE}
+```{r poisson_cross_validation, include=FALSE}
 
 set.seed(123)
 control <- trainControl(method = "cv", number = 5)
 
-# Train the Poisson GLM model thanks to cross-validation
-cv_model <- train(NumberOfDogs ~ KeyDateYear + DistrictCd,
-                  data = df_EN, method = "glm", family = poisson, trControl = control)
-
 ```
 
-```{r poisson_cross_Validation2, include=TRUE}
+``` {r poisson_cross_training, include=FALSE}
+
+if (file.exists("ML1_Final_Dogs_cache/poisson/cv_model.rds")) {
+  # Load the model from the .RDS file
+  cv_model <- readRDS("ML1_Final_Dogs_cache/poisson/cv_model.rds")
+} else {
+  # Train the model
+  cv_model <- train(NumberOfDogs ~ KeyDateYear + DistrictCd,
+                    data = df_EN, method = "glm", family = poisson, trControl = control)
+  
+  # Save the model as an .RDS file
+  saveRDS(cv_model, "ML1_Final_Dogs_cache/poisson/cv_model.rds")
+}
+```
+
+```{r poisson_summary, include=TRUE}
 
 cv_model
 
@@ -1389,16 +1401,15 @@ predictions <- predict(first_poisson_model, type = "response")
 
 ```
 
-``` {r poisson_visualization, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6}
+``` {r poisson_visualization, include=TRUE, fig.align='center', echo=FALSE, fig.keep='all', fig.width=8, fig.height=6}
 
 # Visualize the actual vs predicted number of dogs
-p <- ggplot(df_EN, aes(x = NumberOfDogs, y = predictions)) +
+ggplot(df_EN, aes(x = NumberOfDogs, y = predictions)) +
   geom_point() +
   labs(title = "Actual vs Predicted Number of Dogs",
        x = "Actual Number of Dogs",
-       y = "Predicted Number of Dogs")
-
-ggplotly(p)
+       y = "Predicted Number of Dogs") + 
+  theme_minimal()
 
 ```
 
@@ -1432,14 +1443,15 @@ sum_data$PredictedNumberOfDogs = predictions
 
 ```
 
-``` {r poisson_2nd_model_vis, include=TRUE, fig.align='center', echo=TRUE, fig.keep='all', fig.width=8, fig.height=6}
+``` {r poisson_2nd_model_vis, include=TRUE, fig.align='center', echo=FALSE, fig.keep='all', fig.width=8, fig.height=6}
 
 p <- ggplot(sum_data, aes(x = NumberOfDogs, y = PredictedNumberOfDogs)) +
   geom_point() +
   geom_smooth(method = "lm", se = FALSE) +
   labs(title = "Actual vs Predicted Number of Dog Registrations",
        x = "Actual Number of Dog Registrations",
-       y = "Predicted Number of Dog Registrations")
+       y = "Predicted Number of Dog Registrations") +
+  theme_minimal()
 
 ggplotly(p)
 
@@ -2248,7 +2260,7 @@ After running the code, the final model is a neural network with 16 input nodes,
 # Confusion matrix plot
 net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
     geom_tile() +
-    scale_fill_gradient(low = "mistyrose", high = "darksalmon") +
+    scale_fill_gradient(low = "darkseagreen1", high = "springgreen4") +
     geom_text(aes(label = Freq), vjust = 1) +
     theme_minimal() +
     labs(title = "Binary Confusion Matrix", x = "Reference", y = "Predicted") +
@@ -2286,7 +2298,7 @@ pred <- ROCR::prediction(pred_numeric,
 ```{r neuralnetwork_ROC, echo=FALSE, warning=FALSE, message=FALSE, error=FALSE, results='hide', fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE}
 
 perf <- ROCR::performance(pred, "tpr", "fpr")
-plot(perf, lwd=2, col="darksalmon", main = "ROC Curve")
+plot(perf, lwd=2, col="darkseagreen", main = "ROC Curve")
 abline(a=0, b=1)
 
 ```
@@ -2372,7 +2384,7 @@ trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseI
 
 ``` {r svm_linear_tr, include=FALSE}
 
-file_path <- "ML1_Final_Dogs_cache/svm/svm_linear_model.RDS"
+file_path <- "ML1_Final_Dogs_cache/svm/svm_linear_model.rds"
 
 if (!file.exists(file_path)) {
     # If the file doesn't exist, execute SVM model
@@ -2434,7 +2446,7 @@ At a first glance, most of the predictions happen around the 30 age range, speci
 
 ``` {r svm_radial_tr, include=FALSE}
 
-file_path <- "ML1_Final_Dogs_cache/svm/svm_radial_model.RDS"
+file_path <- "ML1_Final_Dogs_cache/svm/svm_radial_model.rds"
 
 if (!file.exists(file_path)) {
     # If the file doesn't exist, execute SVM model
@@ -2461,7 +2473,7 @@ svm_rbf
 
 ``` {r svm_radial_confusion, include=FALSE}
 
-if (!file.exists("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")) {
+if (!file.exists("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.rds")) {
   
   predictions <- predict(svm_rbf, testing)
   predictions <- round(predict(svm_rbf, testing), -1) # Round to nearest x10
@@ -2471,12 +2483,12 @@ if (!file.exists("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")) {
   misclass_df <- as.data.frame.table(misclass)
   
   # Save the data frame to an .RDS file
-  saveRDS(misclass_df, file = "ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")
+  saveRDS(misclass_df, file = "ML1_Final_Dogs_cache/svm/svm_rbf_misclass.rds")
   
 } else {
   
   # Load the data frame from the .RDS file
-  misclass_df <- readRDS("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")
+  misclass_df <- readRDS("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.rds")
 }
 
 ```
