@@ -103,7 +103,7 @@ library(treemap)
 
 ### 1.1. Presentation of the case
 
-Pet Paradise, a successful Zürich-based pet shop business, wants to expand. However, the owner is not aware of current and future customer needs. The owner has approached us to advise what predictions we can make about canine breeds, ages, neighborhood concentrations and distributions, to figure out where to open the next Pet Paradise branch and what products to offer there.
+We introduce Pet Paradise, a successful Zürich-based pet shop business, wants to expand. However, the owner is not aware of current and future customer needs. The owner has approached us to advise what predictions we can make about canine breeds, ages, neighborhood concentrations and distributions, to figure out where to open the next Pet Paradise branch and what products to offer there.
 
 The objective of our report is to advise Pet Paradise and predict dog breed trends, in order to facilitate targeted marketing. Our analysis delves into canine and pet owner data. We have explored Zürich's neighborhoods to identify prevailing canine demographics and trends. So our predictive analysis extends beyond just current demographics to anticipate future trends, allowing Pet Paradise to stay ahead of evolving customer needs. 
 
