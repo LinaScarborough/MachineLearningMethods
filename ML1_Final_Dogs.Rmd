@@ -7,6 +7,8 @@ output:
     df_print: paged
     theme: "sandstone"
     css: "css/style.css"
+    toc: true
+    toc_float: true
 runtime: shiny
 ---
 
@@ -121,8 +123,7 @@ Moreover, our data science team consists of individuals who are deeply passionat
 
 ### 1.3. Disclaimer
 
-The analysis in this report is conducted purely for educational purposes, focusing solely on the statistical modeling and client recommendations. This means that within the confines of this project, sex values for an animal such as dogs within the dataset are interpreter as binary. The findings presented here are not intended to reflect or endorse any particular social reflections related to gender identity.
-We acknowledge that discussions surrounding gender identity are multifaceted for individuals and communities.
+The analysis in this report is conducted purely for educational purposes, focusing solely on the statistical modeling and client recommendations. This means that within the confines of this project, sex values for an animal such as dogs and their human owners within the dataset are interpreted as binary. The findings presented here are not intended to reflect or endorse any particular social reflections related to Sex identity. We acknowledge that discussions surrounding Sex identity are multifaceted for individuals and communities.
 
 ---
 
@@ -132,7 +133,7 @@ We acknowledge that discussions surrounding gender identity are multifaceted for
 
 As mentioned above, the main data has been sourced from the [opendata.swiss project](https://opendata.swiss/de/dataset/hundebestande-der-stadt-zurich-seit-2015/resource/5f8eafd2-367f-489c-a075-42426d14c586), having been collected and published by the Open Data Portal of the City Council of Zürich, under the name "Hundebestände der Stadt Zürich, seit 2015". The description of the data set from the original source is as follows:
 
-_This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, gender and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
+_This dataset contains information on dogs and their owners from the municipal dog register since 2015. Information on the age group, Sex and statistical district of residence is provided for dog owners. The breed, breed type, sex, year of birth, age and color are recorded for each dog. The dog register is kept by the Dog Control Department of the Zurich City Police._
 
 To ensure a seamless workflow and make variable interpretation easier for our group, we have undertaken several preparatory steps with the dataset. These include renaming columns and translating certain string values from German to English, along with performing some cleaning procedures.
 
@@ -247,9 +248,9 @@ As can be seen in the structure of the data, the set comprises several observati
 
 ---
 
-## 2.2. Exploratory Data Analysis
+### 2.2. Exploratory Data Analysis
 
-### 2.2.1. Analyzing Diversity in Dataset Features: Years, Owner IDs, and Age Groups
+#### 2.2.1. Analyzing Diversity in Dataset Features: Years, Owner IDs, and Age Groups
 
 This series of R code snippets delves into the examination of key
 features within the `df_EN_EDA` dataframe, focusing on the identification and
@@ -279,11 +280,11 @@ print(number_of_unique_Owner)
 
 ```
 
-### 2.2.2. Unique owners by year, by age group and by gender
+#### 2.2.2. Unique owners by year, by age group and by Sex
 
-This section presents an interactive visualization that displays unique owner IDs by age group and gender for a selected year. The user interface allows the selection of a year and a gender, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
+This section presents an interactive visualization that displays unique owner IDs by age group and Sex for a selected year. The user interface allows the selection of a year and a Sex, and the resulting plot shows the distribution of unique Owner IDs across different age groups based on the chosen criteria.
 
-```{r shiny, unique owners by year, by age group and by gender, echo=FALSE, message=FALSE, warning=FALSE}
+```{r shiny, unique owners by year, by age group and by Sex, echo=FALSE, message=FALSE, warning=FALSE}
 
 # Define UI
 ui <- fluidPage(
@@ -291,51 +292,56 @@ ui <- fluidPage(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
                         choices = unique(df_EN_EDA$KeyDateYear)),
-            selectInput("selectedGender", "Select Gender:",
+            selectInput("selectedSex", "Select Sex:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
-            helpText("Displays unique owner IDs by age group and selected gender for the chosen year.")
+            helpText("Displays unique owner IDs by age group and selected Sex for the chosen year.")
         ),
         mainPanel(
-            plotOutput("genderPlot")
+            plotOutput("SexPlot")
         )
     )
 )
 
 # Define server logic
 server <- function(input, output) {
-    output$genderPlot <- renderPlot({
-        # Aggregate unique Owner IDs by Age Group, Year, and Gender
-        if (input$selectedGender == "all") {
-            # Sum across both genders
-            unique_owner_counts_gender <- df_EN_EDA %>%
+    output$SexPlot <- renderPlot({
+        # Aggregate unique Owner IDs by Age Group, Year, and Sex
+        if (input$selectedSex == "all") {
+            # Sum across both Sexs
+            unique_owner_counts_Sex <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup) %>%
-                summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop')
+                summarise(UniqueOwnerCountSex = n_distinct(OwnerId), .groups = 'drop')
         } else {
-            # Filter for a specific gender
-            unique_owner_counts_gender <- df_EN_EDA %>%
+            # Filter for a specific Sex
+            unique_owner_counts_Sex <- df_EN_EDA %>%
                 group_by(KeyDateYear, OwnerAgeGroup, OwnerSex) %>%
-                summarise(UniqueOwnerCountGender = n_distinct(OwnerId), .groups = 'drop') %>%
-                filter(OwnerSex == input$selectedGender)
+                summarise(UniqueOwnerCountSex = n_distinct(OwnerId), .groups = 'drop') %>%
+                filter(OwnerSex == input$selectedSex)
         }
 
         # Adjust factor levels
-        unique_owner_counts_gender$OwnerAgeGroup <- factor(unique_owner_counts_gender$OwnerAgeGroup,
+        unique_owner_counts_Sex$OwnerAgeGroup <- factor(unique_owner_counts_Sex$OwnerAgeGroup,
                                                            levels = unique(df_EN_EDA$OwnerAgeGroup[order(df_EN_EDA$OwnerAgeGroup)]))
 
         # Filter data for the specific year
-        data_for_year_gender <- filter(unique_owner_counts_gender, KeyDateYear == as.numeric(input$selectedYear))
+        data_for_year_Sex <- filter(unique_owner_counts_Sex, KeyDateYear == as.numeric(input$selectedYear))
         
+        # Define gradient colors for discrete levels
+        gradient_colors <- colorRampPalette(c("darkseagreen2", "deepskyblue1"))(length(levels(unique_owner_counts_Sex$OwnerAgeGroup)))
+        names(gradient_colors) <- levels(unique_owner_counts_Sex$OwnerAgeGroup)
+
         # Create the plot
-        ggplot(data_for_year_gender, aes(x = OwnerAgeGroup, y = UniqueOwnerCountGender, fill = OwnerAgeGroup)) +
+        ggplot(data_for_year_Sex, aes(x = OwnerAgeGroup, y = UniqueOwnerCountSex, fill = OwnerAgeGroup)) +
             geom_bar(stat = "identity", position = "dodge") +
-            geom_text(aes(label = UniqueOwnerCountGender), vjust = -0.5, color = "black", size = 3.5) +
+            geom_text(aes(label = UniqueOwnerCountSex), vjust = -0.5, color = "black", size = 3.5) +
             geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
             theme_minimal() +
-            labs(title = paste("Unique Owner IDs by Age Group and", input$selectedGender, "in", input$selectedYear),
+            labs(title = paste("Unique Owner IDs by Age Group and", input$selectedSex, "in", input$selectedYear),
                  x = "Owner Age Group",
-                 y = "Count of Unique Owner IDs") +
-            scale_fill_brewer(palette = "Paired") +
-            scale_y_continuous(limits = c(0, max(2000, max(data_for_year_gender$UniqueOwnerCountGender) + 500)), breaks = seq(0, 2000, by = 500)) +
+                 y = "Count of Unique Owner IDs",
+                 fill = "Owner Age Group") +
+            scale_fill_manual(values = gradient_colors) +
+            scale_y_continuous(limits = c(0, max(2000, max(data_for_year_Sex$UniqueOwnerCountSex) + 500)), breaks = seq(0, 2000, by = 500)) +
             scale_x_discrete(labels = function(x) {
                 x <- gsub("[0-9]+ to [0-9]+ years old", "", x)
                 gsub("Unknown", "", x)
@@ -347,7 +353,7 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-### 2.2.3. Unique owners by age group over years
+#### 2.2.3. Unique owners by age group over years
 
 The following visualization shows the count of unique Owner IDs across different age groups over the years. The plot is generated by aggregating unique Owner IDs by age group and year, adjusting factor levels, and creating a line plot.
 
@@ -364,6 +370,10 @@ unique_owner_counts <- unique_owner_counts %>%
   mutate(OwnerAgeGroup = fct_inorder(OwnerAgeGroup),
          KeyDateYear = as.numeric(as.character(KeyDateYear)))  # Convert KeyDateYear to numeric
 
+# Define gradient colors for discrete levels
+gradient_colors <- colorRampPalette(c("darkseagreen2", "deepskyblue2"))(length(levels(unique_owner_counts$OwnerAgeGroup)))
+names(gradient_colors) <- levels(unique_owner_counts$OwnerAgeGroup)
+
 # Create the line plot for all years with a line per age group
 p <- ggplot(unique_owner_counts, aes(x = KeyDateYear, y = UniqueOwnerCount, group = OwnerAgeGroup, color = OwnerAgeGroup)) +
   geom_line(size = 1) +  # Add line
@@ -371,8 +381,9 @@ p <- ggplot(unique_owner_counts, aes(x = KeyDateYear, y = UniqueOwnerCount, grou
   geom_hline(yintercept = c(100, 500, 1000, 1500, 2000), linetype = "dashed", color = "red") +
   theme_minimal() +
   labs(x = "Year",
-       y = "Count of Unique Owner IDs") +
-  scale_color_brewer(palette = "Paired") +  # Use color to differentiate lines
+       y = "Count of Unique Owner IDs",
+       color = "Owner Age Group") +  # Label for the legend
+  scale_color_manual(values = gradient_colors) +  # Use gradient colors
   scale_y_continuous(limits = c(0, 2500), breaks = seq(0, 2500, by = 500)) +
   scale_x_continuous(breaks = seq(min(unique_owner_counts$KeyDateYear), max(unique_owner_counts$KeyDateYear), by = 1))  # Define breaks in the x-axis scale to show each year
 
@@ -381,7 +392,7 @@ ggplotly(p)
 
 ```
 
-### 2.2.4. Yearly Dog Counts
+#### 2.2.4. Yearly Dog Counts
 
 After confirming successful conversion, we aggregated the data to compute the total number of dogs per year. The resulting counts were then visualized using histograms to illustrate the distribution over the years.
 
@@ -484,11 +495,11 @@ shinyApp(ui = ui, server = server)
 ```
 
 
-### 2.2.5. Heatmap of total number of registered dogs per year 
+#### 2.2.5. Heatmap of total number of registered dogs per year 
 
-A heatmap was created to illustrate the distribution of dogs based on the gender and age group of their owners across different years. The data was organized by grouping it according to the year, owner's age group, and gender. Separate heatmaps were generated for each year to visualize the data for that specific period.
+A heatmap was created to illustrate the distribution of dogs based on the Sex and age group of their owners across different years. The data was organized by grouping it according to the year, owner's age group, and Sex. Separate heatmaps were generated for each year to visualize the data for that specific period.
 
-Each heatmap represents the total number of dogs in various age groups, categorized by the gender of their owners. The color gradient within the heatmap indicates the intensity of dog ownership, with warmer colors representing higher dog counts.
+Each heatmap represents the total number of dogs in various age groups, categorized by the Sex of their owners. The color gradient within the heatmap indicates the intensity of dog ownership, with warmer colors representing higher dog counts.
 
 ```{r shiny, heatmap, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -497,7 +508,7 @@ ui <- fluidPage(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
                         choices = unique(df_EN_EDA$KeyDateYear)),
-            helpText("Displays a heatmap of unique owner counts by age group and gender for the selected year.")
+            helpText("Displays a heatmap of unique owner counts by age group and Sex for the selected year.")
         ),
         mainPanel(
             plotOutput("ownerHeatmap")
@@ -523,8 +534,8 @@ server <- function(input, output) {
                                   limits = c(0, max(owner_counts$UniqueOwners, na.rm = TRUE)), 
                                   name = "Total Owners") +
             theme_minimal() +
-            labs(title = paste("Heatmap of Unique Owners by Gender and Age Group in", input$selectedYear),
-                 x = "Owner's Gender",
+            labs(title = paste("Heatmap of Unique Owners by Sex and Age Group in", input$selectedYear),
+                 x = "Owner's Sex",
                  y = "Owner's Age Group",
                  fill = "Number of Unique Owners") +
             theme(axis.text.y = element_text(angle = 45, hjust = 1))
@@ -538,9 +549,9 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-### 2.2.6. Total Count of Dogs
+#### 2.2.6. Total Count of Dogs
 
-#### 2.2.6.1. Total Count of Dogs by District
+##### 2.2.6.1. Total Count of Dogs by District
 
 The annual distribution of dog registrations across various districts is examined using an interactive Shiny application. Users can select a year to view the total count of dogs by district for that specific year. The data is processed and visualized to provide insights into the distribution patterns over time.
 
@@ -590,20 +601,20 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-#### 2.2.6.2. Total Count of Dogs by District with Dogs'gender
+##### 2.2.6.2. Total Count of Dogs by District with Dogs'Sex
 
-To enhance understanding of the distribution of dogs across different districts and introduce a gender perspective into the analysis, the approach has been modified to include a breakdown by gender. This adjustment allows observation of not only the geographical distribution but also gender dynamics within the dog population each year.
+To enhance understanding of the distribution of dogs across different districts and introduce a Sex perspective into the analysis, the approach has been modified to include a breakdown by Sex. This adjustment allows observation of not only the geographical distribution but also Sex dynamics within the dog population each year.
 
-```{r shiny, total count of dogs by district and dogs gender, echo=FALSE, message=FALSE, warning=FALSE}
+```{r shiny, total count of dogs by district and dogs Sex, echo=FALSE, message=FALSE, warning=FALSE}
 
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", 
                         choices = unique(df_EN_EDA$KeyDateYear)),
-            selectInput("selectedGender", "Select Gender:",
+            selectInput("selectedSex", "Select Sex:",
                         choices = c("All" = "all", "Male" = "male", "Female" = "female")),
-            helpText("Displays the total count of dogs by district and gender for the selected year, ordered by total count.")
+            helpText("Displays the total count of dogs by district and Sex for the selected year, ordered by total count.")
         ),
         mainPanel(
             plotOutput("dogPlot")
@@ -619,13 +630,13 @@ server <- function(input, output) {
                    !is.na(DistrictSort), 
                    DistrictSort != "15")  # Exclude District 15
 
-        # Apply gender filter if not "All"
-        if (input$selectedGender != "all") {
+        # Apply Sex filter if not "All"
+        if (input$selectedSex != "all") {
             filtered_data <- filtered_data %>%
-                filter(DogSex == input$selectedGender)
+                filter(DogSex == input$selectedSex)
         }
 
-        # Aggregate data by district and optionally by gender
+        # Aggregate data by district and optionally by Sex
         yearly_data <- filtered_data %>%
             group_by(DistrictSort, DogSex) %>%
             summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
@@ -640,7 +651,7 @@ server <- function(input, output) {
             scale_fill_manual(values = c("male" = "darkseagreen", "female" = "salmon")) + 
             scale_y_continuous(limits = c(0, 800), breaks = seq(0, 800, by = 100)) +
             theme_minimal() +
-            labs(title = paste("Total Count of Dogs by District and Dog gender in", input$selectedYear),
+            labs(title = paste("Total Count of Dogs by District and Dog Sex in", input$selectedYear),
                  x = "District",
                  y = "Total Number of Dogs") +
             theme(axis.text.x = element_text(angle = 90, hjust = 1),
@@ -654,18 +665,18 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-#### 2.2.6.3. By district and Unique Owners' gender
+##### 2.2.6.3. By district and Unique Owners' Sex
 
-This Shiny application provides an interactive visualization of the total count of dogs by district and owner's gender for a selected year. Users can select a year and the gender of the owner to explore the distribution of dogs across different districts, facilitating insights into demographic and geographic trends in dog ownership.
+This Shiny application provides an interactive visualization of the total count of dogs by district and owner's Sex for a selected year. Users can select a year and the Sex of the owner to explore the distribution of dogs across different districts, facilitating insights into demographic and geographic trends in dog ownership.
 
-```{r shiny, total count of dogs by unique owners gender, echo=FALSE, message=FALSE, warning=FALSE}
+```{r shiny, total count of dogs by unique owners Sex, echo=FALSE, message=FALSE, warning=FALSE}
 
 ui <- fluidPage(
     sidebarLayout(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
-            selectInput("selectedGender", "Select Owner's gender:", choices = c("Male" = "male", "Female" = "female")),
-            helpText("Displays the total count of dogs by district and gender for the selected year.")
+            selectInput("selectedSex", "Select Owner's Sex:", choices = c("Male" = "male", "Female" = "female")),
+            helpText("Displays the total count of dogs by district and Sex for the selected year.")
         ),
         mainPanel(
             plotOutput("dogPlot")
@@ -679,13 +690,13 @@ server <- function(input, output) {
         filtered_data <- df_EN_EDA %>%
             filter(KeyDateYear == as.numeric(input$selectedYear), !is.na(DistrictSort), DistrictSort != "")
 
-        # If 'All' is not selected, further filter by gender
-        if (input$selectedGender != "All") {
+        # If 'All' is not selected, further filter by Sex
+        if (input$selectedSex != "All") {
             filtered_data <- filtered_data %>%
-                filter(OwnerSex == input$selectedGender)
+                filter(OwnerSex == input$selectedSex)
         }
 
-        # Aggregate data by district and optionally by gender
+        # Aggregate data by district and optionally by Sex
         aggregated_data <- filtered_data %>%
             group_by(DistrictSort) %>%
             summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
@@ -699,7 +710,7 @@ server <- function(input, output) {
             scale_fill_viridis_d() +
             theme_minimal() +
             labs(title = paste("Total Count of Dogs by District in", input$selectedYear,
-                               if(input$selectedGender != "All") paste("—", input$selectedGender) else ""),
+                               if(input$selectedSex != "All") paste("—", input$selectedSex) else ""),
                  x = "District",
                  y = "Total Number of Dogs") +
             theme(axis.text.x = element_text(angle = 45, hjust = 1),
@@ -713,11 +724,9 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-#### 2.2.6.4. By district and Breed Type
+##### 2.2.6.4. By district and Breed Type
 
 To deepen the analysis of dog populations across different districts annually, the R script incorporates an additional layer of granularity by assessing dog counts not only by district but also by breed type. This enhancement provides a more detailed view of the diversity within the canine populations across various districts each year.
-
-### version 1
 
 ```{r shiny, total count of dogs by breedtype, echo=FALSE, message=FALSE, warning=FALSE}
 
@@ -788,76 +797,11 @@ server <- function(input, output) {
 shinyApp(ui = ui, server = server)
 ```
 
-### version 2
+##### 2.2.6.5. By district, Breed Type and Dogs's Sex
 
-```{r shiny, total count of dogs by breedtype 2, echo=FALSE, message=FALSE, warning=FALSE}
+In an effort to provide a more comprehensive analysis of dog populations within various districts, the latest R script has been enhanced to include not only total counts by district but also a detailed breakdown by breed type and Sex. This enhancement aims to offer a deeper understanding of the diversity and demographics of canine registrations across different regions.
 
-# Define UI
-ui <- fluidPage(
-    sidebarLayout(
-        sidebarPanel(
-            selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
-            checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
-            helpText("Displays the total count of dogs by district and breed type for the selected year.")
-        ),
-        mainPanel(
-            plotOutput("breedPlot")
-        )
-    )
-)
-
-# Define server logic
-server <- function(input, output) {
-    output$breedPlot <- renderPlot({
-        # Filter data based on the selected year and handle unknown breed types
-        filtered_data <- df_EN_EDA %>%
-            filter(KeyDateYear == as.numeric(input$selectedYear), DistrictSort != "15", !is.na(DistrictSort))
-        
-        # Convert DistrictSort to a factor with levels from 1 to 12
-        filtered_data$DistrictSort <- factor(filtered_data$DistrictSort, levels = as.character(1:12))
-
-        if (!input$includeUnknown) {
-            filtered_data <- filtered_data %>%
-                filter(BreedType != "Unknown")
-        }
-
-        # Summarize total dogs by district and breed type
-        breed_data <- filtered_data %>%
-            group_by(DistrictSort, BreedType) %>%
-            summarize(TotalDogs = sum(NumberOfDogs), .groups = 'drop') %>%
-            ungroup() %>%
-            mutate(Position = as.numeric(DistrictSort))  # Position adjustment
-
-        # Create the plot with bars and points
-        p <- ggplot() +
-            geom_bar(data = breed_data, aes(x = DistrictSort, y = TotalDogs, fill = DistrictSort), stat = "identity") +
-            geom_point(data = breed_data, aes(x = Position, y = TotalDogs, color = BreedType, shape = BreedType), size = 3, position = position_jitterdodge(jitter.width = 0.2)) +
-            geom_hline(yintercept = c(100, 500, 1000, 1500), linetype = "dashed", color = "red") +
-            scale_fill_viridis_d(name = "District", guide = "none") +
-            scale_shape_manual(values = seq(1, 20)) +
-            scale_size(range = c(1, 6)) +
-            scale_y_continuous(limits = c(0, 2000), breaks = seq(0, 2000, by = 500)) +
-            theme_minimal() +
-            labs(title = paste("Total Count of Dogs by District in", input$selectedYear),
-                 subtitle = "Points indicate count by breed type",
-                 x = "District",
-                 y = "Total Count of Dogs") +
-            theme(axis.text.x = element_text(angle = 90, hjust = 1))
-
-        return(p)
-    })
-}
-
-# Run the application
-shinyApp(ui = ui, server = server)
-
-```
-
-#### 2.2.6.5. By district, Breed Type and Dogs's Gender
-
-In an effort to provide a more comprehensive analysis of dog populations within various districts, the latest R script has been enhanced to include not only total counts by district but also a detailed breakdown by breed type and gender. This enhancement aims to offer a deeper understanding of the diversity and demographics of canine registrations across different regions.
-
-```{r shiny, total count of dogs by breedtype and dogs gender, echo=FALSE, message = FALSE, warning=FALSE}
+```{r shiny, total count of dogs by breedtype and dogs Sex, echo=FALSE, message = FALSE, warning=FALSE}
 
 # Define UI for the application
 ui <- fluidPage(
@@ -865,9 +809,9 @@ ui <- fluidPage(
         sidebarPanel(
             selectInput("selectedYear", "Select Year:", choices = unique(df_EN_EDA$KeyDateYear)),
             selectInput("selectedBreedType", "Select Breed Type:", choices = c("All", unique(df_EN_EDA$BreedType))),
-            selectInput("selectedGender", "Select Gender:", choices = c("All", "Male" = "male", "Female" = "female")),
+            selectInput("selectedSex", "Select Sex:", choices = c("All", "Male" = "male", "Female" = "female")),
             checkboxInput("includeUnknown", "Include Unknown Breeds", value = FALSE),
-            helpText("Displays the total count of dogs by district, breed type, and gender for the selected year.")
+            helpText("Displays the total count of dogs by district, breed type, and Sex for the selected year.")
         ),
         mainPanel(
             plotOutput("dogPlot")
@@ -897,10 +841,10 @@ server <- function(input, output) {
                 filter(BreedType == input$selectedBreedType)
         }
 
-        # Filter by selected gender if not 'All'
-        if (input$selectedGender != "All") {
+        # Filter by selected Sex if not 'All'
+        if (input$selectedSex != "All") {
             filtered_data <- filtered_data %>%
-                filter(DogSex == input$selectedGender)
+                filter(DogSex == input$selectedSex)
         }
 
         # Calculate total number of dogs per district
@@ -919,8 +863,8 @@ server <- function(input, output) {
             scale_shape_manual(values = seq(1, 20)) +
             scale_y_continuous(limits = c(0, 2000), breaks = seq(0, 2000, by = 500)) +
             theme_minimal() +
-            labs(title = paste("Total Count of Dogs by District, Breed, and Gender in", input$selectedYear),
-                 subtitle = "Bar: Total Count | Points: Count by Breed and Gender",
+            labs(title = paste("Total Count of Dogs by District, Breed, and Sex in", input$selectedYear),
+                 subtitle = "Bar: Total Count | Points: Count by Breed and Sex",
                  x = "District",
                  y = "Total Count of Dogs") +
             theme(axis.text.x = element_text(angle = 90, hjust = 1))
@@ -936,9 +880,9 @@ shinyApp(ui = ui, server = server)
 
 ---
 
-### 2.2.7. Top dog breeds
+#### 2.2.7. Top dog breeds
 
-#### 2.2.7.1. Top dog breeds by year
+##### 2.2.7.1. Top dog breeds by year
 
 This Shiny application provides a clear and dynamic way to visualize the most popular dog breeds each year, allowing for the inclusion or exclusion of unknown breeds. The color-coding of breeds enhances readability and helps in quickly identifying trends.
 
@@ -1015,7 +959,7 @@ shinyApp(ui = ui, server = server)
 
 ```
 
-#### 2.2.7.2. Top dog breeds by district
+##### 2.2.7.2. Top dog breeds by district
 
 This visualization enables users to explore the distribution of dog breeds across different districts for a selected year. It highlights the top 5 dog breeds in each district, allowing for a detailed understanding of breed trends and distribution patterns.
 
@@ -1641,7 +1585,7 @@ For every year increase in dog age, the probability of being female increase by 
 While the statistical significance of the coefficient for a dog's age suggests that there is evidence to support the relationship between dog age and the probability of being female,
 the practical significance of a 0.35% increase in odds may not be substantial enough to warrant immediate business decisions based solely on this finding.
 
-Further analysis may be needed here. Although the hypothesis was to offer products tailored to the dog's age and gender, and while age appears to influence sex likelihood, additional factors such as breed and size would provide a more sound business decision making.
+Further analysis may be needed here. Although the hypothesis was to offer products tailored to the dog's age and Sex, and while age appears to influence sex likelihood, additional factors such as breed and size would provide a more sound business decision making.
 
 So more investigation into factors would refine predictions. We look at dog breeds. 
 
@@ -2297,6 +2241,7 @@ if (!file.exists(file_path)) {
     # If the file exists, load the model
     svm_linear <- readRDS(file_path)
 }
+
 ```
 
 ``` {r svm_linear_sum, fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE, echo=TRUE}
@@ -2306,7 +2251,7 @@ svm_linear
 ```
 
 
-``` {r svm_linear_confusion, include=FALSE}
+``` {r svm_linear_confusion, include=FALSE, cache=TRUE}
 
 # Predictions on testing data
 predictions <- predict(svm_linear, testing)
@@ -2323,13 +2268,13 @@ misclass_df <- as.data.frame.table(misclass)
 
 The predicted results have been adjusted and rounded to their nearest multiple of 10, in order to be able to visualize them against the actual decade time ranges represented in the original data. The following confusion plot shows the frequency of guesses for each age range.
 
-``` {r svm_linear_confusion_plot}
+``` {r svm_linear_confusion_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
 
 svm_linear_conf <- ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
   geom_tile(color = "white") +
   scale_fill_gradient(low = "white", high = "seagreen") +
   theme_minimal() +
-  labs(title = "Confusion Matrix",
+  labs(title = "Confusion Matrix - SVM Linear Kernel",
        x = "Reference",
        y = "Prediction",
        fill = "Frequency")
@@ -2339,6 +2284,72 @@ ggplotly(svm_linear_conf)
 ```
 
 At a first glance, most of the predictions happen around the 30 age range, specifically misclassifications where the model predicts 40. This is an acceptable error, as it reflects the observations we have previously made that most dog owners belong to those two age groups. No predictions were made for ages outside of the 40-60 range in this case.
+
+``` {r svm_radial_tr, include=FALSE}
+
+file_path <- "ML1_Final_Dogs_cache/svm/svm_radial_model.RDS"
+
+if (!file.exists(file_path)) {
+    # If the file doesn't exist, execute SVM model
+    svm_rbf <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
+                     data = training,
+                     method = "svmRadial",
+                     trControl = trctrl,
+                     trace = TRUE,
+                     tuneLength = 10)
+
+    saveRDS(svm_rbf, file = file_path)
+} else {
+    # If the file exists, load the model
+    svm_rbf <- readRDS(file_path)
+}
+
+```
+
+``` {r svm_radial_sum, fig.align='center', include=TRUE, fig.width=8, fig.height=6, cache=TRUE, echo=TRUE}
+
+svm_rbf
+
+```
+
+``` {r svm_radial_confusion, include=FALSE}
+
+if (!file.exists("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")) {
+  
+  predictions <- predict(svm_rbf, testing)
+  predictions <- round(predict(svm_rbf, testing), -1) # Round to nearest x10
+  
+  # Create a table of predicted vs. true values
+  misclass <- table(predict = predictions, truth = round(testing$OwnerAgeGroupCd, -1))
+  misclass_df <- as.data.frame.table(misclass)
+  
+  # Save the data frame to an .RDS file
+  saveRDS(misclass_df, file = "ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")
+  
+} else {
+  
+  # Load the data frame from the .RDS file
+  misclass_df <- readRDS("ML1_Final_Dogs_cache/svm/svm_rbf_misclass.RDS")
+}
+
+```
+
+``` {r svm_radial_confusion_plot, echo=FALSE, message=FALSE, warning=FALSE, fig.align='center'}
+
+svm_radial_conf <- ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "turquoise4") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix - SVM Radial Kernel",
+       x = "Reference",
+       y = "Prediction",
+       fill = "Frequency")
+
+ggplotly(svm_radial_conf)
+
+```
+
+
 
 ---
 

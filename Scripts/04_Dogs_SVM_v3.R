@@ -54,7 +54,7 @@ training <- df_EN_svm[intrain, ]
 testing <- df_EN_svm[-intrain, ]
 
 
-#### LINEAR KERNEL ####
+#### LINEAR KERNEL MODEL ####
 
 # Train control
 trctrl <- trainControl(method = "repeatedcv", number = 10, repeats = 3, verboseIter = TRUE)
@@ -68,7 +68,7 @@ svm_linear <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
 
 saveRDS(svm_linear, file = "../ML1_Final_Dogs_cache/svm/svm_linear_model.RDS")
 
-#### MODEL EVALUATION ####
+#### LINEAR KERNEL MODEL EVALUATION ####
 
 # Predictions on testing data
 predictions <- predict(svm_linear, testing)
@@ -92,20 +92,7 @@ ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
        fill = "Frequency")
 
 
-
-
-
-
-
-
-
-
-
-
-
-
-#### RADIAL KERNEL #####
-
+#### RADIAL KERNEL MODEL #####
 
 # Train SVM with Radial Basis Function (RBF) kernel
 svm_rbf <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
@@ -116,8 +103,30 @@ svm_rbf <- train(OwnerAgeGroupCd ~ DogAgeGroupCd,
                  tuneLength = 10
 )
 
+# Save the models
+saveRDS(svm_rbf, file = "../ML1_Final_Dogs_cache/svm/svm_radial_model.RDS")
+svm_rbf <- readRDS("../ML1_Final_Dogs_cache/svm/svm_radial_model.RDS")
 svm_rbf
 
-# Save the models
+#### RADIAL KERNEL MODEL EVALUATION
 
-saveRDS(svm_rbf, file = "../ML1_Final_Dogs_cache/svm/svm_radial_model.RDS")
+# Predictions on testing data
+predictions <- predict(svm_rbf, testing)
+predictions <- round(predict(svm_rbf, testing), -1) # Round to nearest x10
+
+# Create a table of predicted vs. true values using the testing data
+misclass <- table(predict = predictions, truth = round(testing$OwnerAgeGroupCd, -1))
+misclass
+
+# Convert misclass to a data frame
+misclass_df <- as.data.frame.table(misclass)
+
+# Plot confusion matrix
+ggplot(misclass_df, aes(x = truth, y = predict, fill = Freq)) +
+  geom_tile(color = "white") +
+  scale_fill_gradient(low = "white", high = "steelblue") +
+  theme_minimal() +
+  labs(title = "Confusion Matrix - Radial Kernel",
+       x = "Reference",
+       y = "Prediction",
+       fill = "Frequency")
