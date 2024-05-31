@@ -6,6 +6,7 @@ output:
   html_document:
     df_print: paged
     theme: "sandstone"
+    citation_package: natbib
     css: "css/style.css"
     toc: true
     toc_float: true
@@ -245,7 +246,7 @@ As can be seen in the structure of the data, the set comprises several observati
   - `Breed1Text` and `Breed1Text2`: referring to dog race denominations and information
   - `MixedBreedText`: additional information regarding race mixing in the dog
   - `DogColorText`: a descriptive name for the colour of the dog
-  - `BreedTypeLong`: referring to the official dog type classification according to the [@zh2009hundeverordnung]
+  - `BreedTypeLong`: referring to the official dog type classification according to the [@ ]
 
 ---
 
@@ -1755,12 +1756,155 @@ library(effects)
 
 #### 3.4.1. GAM model: evolution of popular breeds
 
+To assess Pet Paradise on the question of _evolution of popular dog breeds_ we will employ Generalized Additive Models (GAM). Such models can capture the non-linear patterns inherent in the popularity fluctuations of various dog breeds throughout the years. This analysis will enable Pet Paradise to make informed predictions about future trends, thereby facilitating their ability to anticipate the demand for breed-specific products.
 
+First we have a look at all districts together.
 
+```{r GAM for 5 Top breed  - ALL DISTRICTS TOGETHER, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+# Clean reload of data
+df_EN_gam <- read.csv('Datasets/df_EN_EDA.csv')
+
+# Ensure correct type
+df_EN_gam$KeyDateYear <- as.numeric(as.character(df_EN_gam$KeyDateYear))
+df_EN_gam$PrimaryBreed <- factor(df_EN_gam$PrimaryBreed)
+
+# Aggregating data to get count of dogs per breed per year (ignoring district)
+breed_trends <- df_EN_gam %>%
+  group_by(KeyDateYear, PrimaryBreed) %>%
+  summarise(BreedCount = sum(NumberOfDogs), .groups = 'drop') %>%
+  filter(PrimaryBreed != "Unknown" & PrimaryBreed %in% c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser")) %>%
+  as.data.frame()
+
+# Ensure no NA values in the key variables
+breed_trends <- breed_trends %>%
+  filter(!is.na(BreedCount), !is.na(KeyDateYear))
+
+# R-sq.(adj) =  0.994   Deviance explained = 99.6%
+gam_model <- gam(BreedCount ~ te(KeyDateYear, by = PrimaryBreed, k = 8) + s(PrimaryBreed, bs = "re"),
+                 data = breed_trends, method = "REML", family = poisson(link = "log"))
+
+# Prepare new data for prediction
+new_data <- data.frame(
+  KeyDateYear = rep(seq(2015, 2030, by = 1), times = 5),
+  PrimaryBreed = factor(rep(c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"), each = 16),
+                        levels = c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"))
+)
+
+# Predict counts for the new dataset
+new_data$predicted_breed_count <- predict(gam_model, newdata = new_data, type = "response")
+
+# Function to assign colors to breeds
+assign_colors <- function(data) {
+  breeds <- unique(data$PrimaryBreed)
+  colors <- scales::hue_pal()(length(breeds))
+  setNames(colors, breeds)
+}
+breed_color_map <- assign_colors(new_data)
+
+gg <- ggplot() +
+  geom_line(data = new_data, aes(x = KeyDateYear, y = predicted_breed_count, color = PrimaryBreed), size = 1) +
+  geom_point(data = breed_trends, aes(x = KeyDateYear, y = BreedCount, color = PrimaryBreed), size = 2) +
+  # ylim(0, 600) +
+  labs(x = "Year", y = "Count", title = "Yearly Trend of Predicted and Actual Breed Counts (Summed across all Districts)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top") +
+  guides(color = guide_legend(title = "Breed", title.position = "top"))
+
+ggplotly(gg)
+
+# Summary and diagnostic plots of the combined model
+summary(gam_model)
+
+```
+
+Next we direct our attention to each individual city district.
+
+```{r GAM for 5 Top breed  - Per DISTRICT,  echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+# Ensure correct type
+df_EN_gam$KeyDateYear <- as.numeric(as.character(df_EN_gam$KeyDateYear))
+df_EN_gam$PrimaryBreed <- factor(df_EN_gam$PrimaryBreed)
+df_EN_gam$DistrictSort <- factor(df_EN_gam$DistrictSort, levels = 1:12)
+
+# Aggregating data to get count of dogs per breed per year per district
+breed_trends <- df_EN_gam %>%
+  group_by(KeyDateYear, PrimaryBreed, DistrictSort) %>%
+  summarise(BreedCount = sum(NumberOfDogs), .groups = 'drop') %>%
+  filter(PrimaryBreed != "Unknown" & 
+           PrimaryBreed %in% c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser")) %>%
+  as.data.frame()
+
+# Check the structure of the aggregated data
+str(breed_trends)
+
+# Ensure no NA values in the key variables
+breed_trends <- breed_trends %>%
+  filter(!is.na(BreedCount), !is.na(KeyDateYear), !is.na(DistrictSort))
+
+# Prepare new data for prediction for each district
+new_data <- expand.grid(
+  KeyDateYear = seq(2015, 2030, by = 1),
+  PrimaryBreed = factor(c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"),
+                        levels = c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser")),
+  DistrictSort = factor(1:12, levels = 1:12)
+)
+
+# Function to fit the GAM model and make predictions for a specific district
+fit_gam_and_predict <- function(district) {
+  district_data <- breed_trends %>% filter(DistrictSort == district)
+  
+  # Check if there are enough data points to fit the model
+  if(nrow(district_data) < 10) {
+    return(NULL)  # Skip this district if not enough data
+  }
+  
+  # Fit the GAM model with reduced complexity and interaction terms
+  gam_model <- gam(BreedCount ~ s(KeyDateYear, bs = "cr", k = 5) + s(PrimaryBreed, bs = "re"),
+                   data = district_data, method = "REML", family = poisson(link = "log"))
+  
+  # Predict counts for the new dataset
+  new_data_district <- new_data %>% filter(DistrictSort == district)
+  new_data_district$predicted_breed_count <- predict(gam_model, newdata = new_data_district, type = "response")
+  
+  return(new_data_district)
+}
+
+# Apply the function to each district and combine the results
+predicted_data_list <- lapply(levels(df_EN_gam$DistrictSort), fit_gam_and_predict)
+predicted_data <- do.call(rbind, predicted_data_list[!sapply(predicted_data_list, is.null)])
+
+# Function to assign colors to breeds
+assign_colors <- function(data) {
+  breeds <- unique(data$PrimaryBreed)
+  colors <- scales::hue_pal()(length(breeds))
+  setNames(colors, breeds)
+}
+breed_color_map <- assign_colors(new_data)
+
+gg <- ggplot() +
+  geom_line(data = predicted_data, aes(x = KeyDateYear, y = predicted_breed_count, color = PrimaryBreed), size = 1) +
+  geom_point(data = breed_trends, aes(x = KeyDateYear, y = BreedCount, color = PrimaryBreed), size = 1) +
+  facet_wrap(~DistrictSort, scales = "free_y") +
+  ylim(0, 200) +
+  labs(x = "Year", y = "Count", title = "Yearly Trend of Predicted and Actual Breed Counts per District") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top") +
+  guides(color = guide_legend(title = "Breed", title.position = "top"))
+
+ggplotly(gg)
+
+# Check the summary and diagnostic plots for one of the models (optional)
+district_example <- levels(df_EN_gam$DistrictSort)[1]
+example_model <- gam(BreedCount ~ s(KeyDateYear, bs = "cr", k = 5) + s(PrimaryBreed, bs = "re"),
+                     data = breed_trends %>% filter(DistrictSort == district_example), method = "REML", family = poisson(link = "log"))
+summary(example_model)
+
+```
 
 #### 3.4.2. GAM model: dog count over time
 
-For the second part of the Generalized Additive Model chapter we again direct our attention to the previously introduced research question: _how do dog counts evolve over time?_
+For the second part of the Generalized Additive Model chapter we again direct our attention to the previously posed research question: _how do dog counts evolve over time?_
 
 As a straightforward implementation of the GAM model, we set ourselves to produce a regression of the registered count data, grouped by districts of the city, analyze their evolution over time, and additionally provide predictions for the next 10 years.
 
