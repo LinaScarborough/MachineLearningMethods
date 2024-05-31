@@ -327,7 +327,7 @@ server <- function(input, output) {
         data_for_year_Sex <- filter(unique_owner_counts_Sex, KeyDateYear == as.numeric(input$selectedYear))
         
         # Define gradient colors for discrete levels
-        gradient_colors <- colorRampPalette(c("aquamarine2", "darkslategray4"))(length(levels(unique_owner_counts_Sex$OwnerAgeGroup)))
+        gradient_colors <- colorRampPalette(c("darkslategray2", "darkslategray"))(length(levels(unique_owner_counts_Sex$OwnerAgeGroup)))
         names(gradient_colors) <- levels(unique_owner_counts_Sex$OwnerAgeGroup)
 
         # Create the plot
@@ -371,7 +371,7 @@ unique_owner_counts <- unique_owner_counts %>%
          KeyDateYear = as.numeric(as.character(KeyDateYear)))  # Convert KeyDateYear to numeric
 
 # Define gradient colors for discrete levels
-gradient_colors <- colorRampPalette(c("aquamarine2", "darkslategray4"))(length(levels(unique_owner_counts$OwnerAgeGroup)))
+gradient_colors <- colorRampPalette(c("darkslategray2", "darkslategray"))(length(levels(unique_owner_counts$OwnerAgeGroup)))
 names(gradient_colors) <- levels(unique_owner_counts$OwnerAgeGroup)
 
 # Create the line plot for all years with a line per age group
@@ -1742,10 +1742,6 @@ The first model offered insights into the relationship between dog age and sex b
 
 ### 3.4. Generalized Additive Model
 
-For the Generalized Additive Model chapter we again direct our attention to the previously introduced research question: _how do dog counts evolve over time?_
-
-As a straightforward implementation of the GAM model, we set ourselves to produce a regression of the registered count data, grouped by districts of the city, analyze their evolution over time, and additionally provide predictions for the next 10 years.
-
 ```{r gam_libraries, include=FALSE}
 
 if (!require(mgcv, quietly = TRUE)) {install.packages("mgcv")}
@@ -1756,7 +1752,75 @@ library(effects)
 
 ```
 
-#### 3.4.1. GAM model: dog count over time
+#### 3.4.1. GAM model: evolution of popular breeds
+
+```{r GAM for 5 Top breed  - ALL DISTRICT TOGETHER, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
+
+df_EN_gam <- df_EN_EDA
+
+# Ensure correct type
+df_EN_gam$KeyDateYear <- as.numeric(as.character(df_EN_gam$KeyDateYear))
+df_EN_gam$PrimaryBreed <- factor(df_EN_gam$PrimaryBreed)
+
+# Aggregating data to get count of dogs per breed per year (ignoring district)
+breed_trends <- df_EN_gam %>%
+  group_by(KeyDateYear, PrimaryBreed) %>%
+  summarise(BreedCount = sum(NumberOfDogs), .groups = 'drop') %>%
+  filter(PrimaryBreed != "Unknown" & PrimaryBreed %in% c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser")) %>%
+  as.data.frame()
+
+# Check the structure of the aggregated data
+str(breed_trends)
+
+# Ensure no NA values in the key variables
+breed_trends <- breed_trends %>%
+  filter(!is.na(BreedCount), !is.na(KeyDateYear))
+
+# R-sq.(adj) =  0.994   Deviance explained = 99.6%
+gam_model <- gam(BreedCount ~ te(KeyDateYear, by = PrimaryBreed, k = 9) + s(PrimaryBreed, bs = "re"),
+                 data = breed_trends, method = "REML", family = poisson(link = "log"))
+
+# Prepare new data for prediction
+new_data <- data.frame(
+  KeyDateYear = rep(seq(2015, 2030, by = 1), times = 5),
+  PrimaryBreed = factor(rep(c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"), each = 16),
+                        levels = c("Chihuahua", "Labrador Retriever", "Yorkshire Terrier", "Jack Russel Terrier", "Malteser"))
+)
+
+# Predict counts for the new dataset
+new_data$predicted_breed_count <- predict(gam_model, newdata = new_data, type = "response")
+
+# Function to assign colors to breeds
+assign_colors <- function(data) {
+  breeds <- unique(data$PrimaryBreed)
+  colors <- scales::hue_pal()(length(breeds))
+  setNames(colors, breeds)
+}
+breed_color_map <- assign_colors(new_data)
+
+# Plot the results with real data points
+ggplot() +
+  geom_line(data = new_data, aes(x = KeyDateYear, y = predicted_breed_count, color = PrimaryBreed), size = 1) +
+  geom_point(data = breed_trends, aes(x = KeyDateYear, y = BreedCount, color = PrimaryBreed), size = 2) +
+  # ylim(0, 600) +
+  labs(x = "Year", y = "Count", title = "Yearly Trend of Predicted and Actual Breed Counts (Summed across all Districts)") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1), legend.position = "top") +
+  guides(color = guide_legend(title = "Breed", title.position = "top"))
+
+# Summary and diagnostic plots of the combined model
+summary(gam_model)
+# plot.gam(gam_model)
+
+
+```
+
+
+#### 3.4.2. GAM model: dog count over time
+
+For the second part of the Generalized Additive Model chapter we again direct our attention to the previously introduced research question: _how do dog counts evolve over time?_
+
+As a straightforward implementation of the GAM model, we set ourselves to produce a regression of the registered count data, grouped by districts of the city, analyze their evolution over time, and additionally provide predictions for the next 10 years.
 
 ```{r gam_model_simple - Total Count of Dogs by District Over Years with Predictions, echo=FALSE, message=FALSE, fig.align='center', fig.width=8, fig.height=6, warning=FALSE}
 
@@ -2358,4 +2422,6 @@ ggplotly(svm_radial_conf)
 
 ---
 
-## 6. Appendix: Working with generative AI tools
+## 6. Appendix
+
+### 6.1. Working with generative AI tools
