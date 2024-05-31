@@ -22,3 +22,12 @@
   howpublished = {Opendata.swiss},
   url       = {https://opendata.swiss/de/dataset/hundebestande-der-stadt-zurich-seit-2015/resource/5f8eafd2-367f-489c-a075-42426d14c586},
 }
+
+@article{zh2009hundeverordnung,
+  title = {Hundeverordnung},
+  author = {Regierungsrat},
+  journal = {Stadt Zürich},
+  year = {2009},
+  month = {November},
+  url = {https://www.zh.ch/content/dam/zhweb/bilder-dokumente/themen/umwelt-tiere/tiere/veterinaeramt/hunde/publikationen/erlaeuterungenzuhuv.pdf},
+}
