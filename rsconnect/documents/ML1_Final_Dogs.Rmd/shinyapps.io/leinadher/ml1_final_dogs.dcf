@@ -5,7 +5,7 @@ account: leinadher
 server: shinyapps.io
 hostUrl: https://api.shinyapps.io/v1
 appId: 12104018
-bundleId: 8687269
+bundleId: 8687323
 url: https://leinadher.shinyapps.io/ml1_final_dogs/
 version: 1
 asMultiple: FALSE

@@ -2656,7 +2656,7 @@ Lastly, dog breeds were deliberately chosen to be left in their original form, g
 
 ### 4.2. Interactive plots and UI elements
 
-A noteworthy aspect of our project was the emphasis on integrating data-driven research with a clean and sophisticated user-friendly interface. To achieve this, we extensively utilized the Shiny Apps framework, particularly in the Exploratory Data Analysis section of our report. This focus was crucial for directing us towards a correct understanding of the data and its underlying patterns, enabling us to formulate the right questions and match them with the most appropriate tools.
+Also a noteworthy aspect of our project was the emphasis on integrating data-driven research with a clean and sophisticated user-friendly interface. To achieve this, we extensively utilized the Shiny Apps framework, particularly in the Exploratory Data Analysis section of our report. This focus was crucial for directing us towards a correct understanding of the data and its underlying patterns, enabling us to formulate the right questions and match them with the most appropriate tools.
 
 In addition to Shiny Apps, many of the plots generated with the ggplot2 library were made interactive through the implementation of the Plotly framework. This interactivity enhanced the analytical capabilities and accessibility of our visualizations, making them more informative and engaging for users.
 
@@ -2705,8 +2705,6 @@ Irrespective of the technical success of our model outcomes or the quantifiable 
 ---
 
 ## 6. Appendix
-
----
 
 ### 6.1. Working with generative AI tools
 
