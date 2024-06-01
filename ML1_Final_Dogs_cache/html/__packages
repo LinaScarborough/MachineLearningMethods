@@ -36,3 +36,5 @@ e1071
 foreach
 iterators
 doParallel
+kernlab
+rmarkdown
