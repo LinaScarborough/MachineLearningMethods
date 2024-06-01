@@ -10,6 +10,7 @@ output:
     css: "css/style.css"
     toc: true
     toc_float: true
+    self_contained: true
 bibliography: references.bib
 link-citations: yes
 runtime: shiny
@@ -1360,6 +1361,7 @@ summary(first_poisson_model)
 
 ```{r poisson_cross_validation, include=FALSE}
 
+library(caret)
 set.seed(123)
 control <- trainControl(method = "cv", number = 5)
 
@@ -2304,7 +2306,7 @@ After running the code, the final model is a neural network with 16 input nodes,
 # Confusion matrix plot
 net_ggplot <- ggplot(data = cm_binary_df, aes(x = Reference, y = Prediction, fill = Freq)) +
     geom_tile() +
-    scale_fill_gradient(low = "darkseagreen1", high = "springgreen4") +
+    scale_fill_gradient(low = "white", high = "darkseagreen") +
     geom_text(aes(label = Freq), vjust = 1) +
     theme_minimal() +
     labs(title = "Binary Confusion Matrix", x = "Reference", y = "Predicted") +
@@ -2467,6 +2469,8 @@ svm_linear
 The chosen model with linear kernel function is assigned a cost parameter of 1. We now go ahead and look at the results.
 
 ``` {r svm_linear_confusion, include=FALSE, cache=TRUE}
+
+library(kernlab)
 
 truth = round(testing$OwnerAgeGroupCd, -1)
 
@@ -2685,6 +2689,14 @@ The dataset chosen presented a series of particular hurdles from the beginning. 
 Such characteristics in the data provided an opportunity to focus the research on interpreting grouped counts of items and their relationships with others, allowing us to devise research questions that leveraged this data quality. The effort generally followed the traditional sequence of posing a question and then identifying the appropriate method to answer it. This approach became more challenging with complex models, where the process often seemed reversed.
 
 The most significant challenge was building complex models, specifically the artificial neural networks and support vector machines, which typically perform better with complex numeric relationships and more quantitative data. These observations support the frequently stated notion that simpler models often perform better with simpler datasets and are usually the best choice for addressing the research questions posed.
+
+---
+
+### 5.3. A collaborative project
+
+In reflection, the undertaking of this project underscores the efficiency and cohesive collaboration among our team. What we initially planned out as a modular effort, with each member contributing distinct elements, evolved into a collaborative process where everyone engaged in every facet of constructing the final report. One member would meticulously prepare the data and conduct analysis, another would focus on crafting and finetuning a machine learning model and assess residuals, until finally another member would document the entire progression, and implement it into the main script.
+
+Irrespective of the technical success of our model outcomes or the quantifiable success rates of the individual steps, we collectively emerge from this experience with a deep sense of accomplishment and satisfaction.
 
 ---
 

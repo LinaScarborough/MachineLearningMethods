@@ -1,0 +1,12 @@
+name: ml1_final_dogs
+title: ML1_Final_Dogs
+username: leinadher
+account: leinadher
+server: shinyapps.io
+hostUrl: https://api.shinyapps.io/v1
+appId: 12104018
+bundleId: 8685415
+url: https://leinadher.shinyapps.io/ml1_final_dogs/
+version: 1
+asMultiple: FALSE
+asStatic: FALSE
